@@ -1,0 +1,124 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/
+.ENV/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# PyCharm Jupyter Notebook
+.ipynb_checkpoints
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Coverage
+coverage.xml
+*.cover
+*.py,cover
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Intermediate data files
+cache/
+*.cache
+intermediate_*.json
+temp/
+tmp/
+*.tmp
+
+# Log files
+*.log
+logs/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Ruff
+.ruff_cache/
+
+# Black
+.cache/
+
+# Local configuration
+config.local.json
+*.local.json
+
+# Test artifacts
+.test_results/
+test_output/
+
+# Generated reports (keep templates, ignore generated)
+*.pdf
+!README.pdf
+reports/
+output/
+
+# Data files (keep structure, ignore large data)
+data/*.csv
+data/*.parquet
+!data/.gitkeep
+
+# Model artifacts (if any)
+models/
+*.pkl
+*.joblib
+
+# API keys / secrets (NEVER commit these)
+*.pem
+*.key
+secrets/
+credentials.json
+api_keys.json
