@@ -33,6 +33,7 @@ Expected local files:
 
 - `quantitative_analyzer.py`
 - `final_process.py`
+- `pdf_report_generator.py`
 - `requirements.txt`
 
 Expected generated files:
@@ -41,6 +42,7 @@ Expected generated files:
 - `enriched_canslim.json`
 - `final_canslim_report.json`
 - `canslim_analysis.log`
+- `out/canslim_report_{date}.pdf` (PDF report with formatted analysis)
 
 ## Canonical JSON contract
 
@@ -139,7 +141,7 @@ The enriched schema must be the same as the intermediate schema, plus AI_Qualita
 ## Execution rules
 Follow this checklist exactly:
 
-1. Verify files: Confirm quantitative_analyzer.py, final_process.py, and requirements.txt exist.
+1. Verify files: Confirm quantitative_analyzer.py, final_process.py, pdf_report_generator.py, and requirements.txt exist.
 
 2. Create environment:
 ```bash
@@ -179,13 +181,20 @@ python quantitative_analyzer.py
 ```bash
 python final_process.py
 ```
+This will automatically generate both the JSON report and the PDF report.
 
 9. Display results: Read final_canslim_report.json and present the ranked list of stocks, CANSLIM scores, met criteria, missed criteria, price, RS rating, and catalyst note.
 
-10. Cleanup:
+10. PDF Report: The PDF report is generated in `out/canslim_report_{date}.pdf` with professional formatting including:
+    - Report header with metadata and score distribution
+    - Individual stock sections with grades and CANSLIM criteria status
+    - Key metrics tables (RS Rating, EPS growth, institutional ownership)
+    - Detailed analysis for each criterion (C, A, N, S, L, I, M)
+
+11. Cleanup:
 ```bash
 deactivate
-```   
+```
 
 ## Scoring contract
 Use this exact final scoring model:
