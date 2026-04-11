@@ -30,6 +30,7 @@ venv/
 ENV/
 env/
 .ENV/
+canslim_analysis/
 
 # PyCharm
 .idea/
