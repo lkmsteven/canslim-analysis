@@ -98,6 +98,9 @@ config.local.json
 
 # Test artifacts
 .test_results/
+
+# Output reports - keep the folder but ignore generated PDFs
+# out/*.pdf
 test_output/
 
 # Generated reports (keep templates, ignore generated)

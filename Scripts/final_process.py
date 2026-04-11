@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+import subprocess
+import sys
 from datetime import datetime
 from typing import Any, Dict, List, Tuple
 
@@ -305,6 +307,27 @@ def main() -> None:
     logger.info("Total stocks evaluated: %s", len(processed_stocks))
     logger.info("Score distribution: %s", score_distribution)
     logger.info("Results saved to: %s", output_path)
+
+    # Generate PDF report
+    try:
+        pdf_generator_path = os.path.join(script_dir, "pdf_report_generator.py")
+        if os.path.exists(pdf_generator_path):
+            logger.info("Generating PDF report...")
+            result = subprocess.run(
+                [sys.executable, pdf_generator_path],
+                cwd=script_dir,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            if result.returncode == 0:
+                logger.info("PDF report generated successfully")
+            else:
+                logger.warning("PDF generation failed: %s", result.stderr)
+        else:
+            logger.warning("PDF generator script not found: %s", pdf_generator_path)
+    except Exception as exc:
+        logger.warning("Error generating PDF report: %s", exc)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,2 @@
+# This file ensures the "out" directory is tracked by Git
+# PDF reports will be generated in this folder
