@@ -191,7 +191,9 @@ This will automatically generate both the JSON report and the PDF report.
     - Key metrics tables (RS Rating, EPS growth, institutional ownership)
     - Detailed analysis for each criterion (C, A, N, S, L, I, M)
 
-11. Cleanup:
+11. Delivery: Always attach the CANSLIM report PDF to the user-facing response when the analysis completes successfully.
+
+12. Cleanup:
 ```bash
 deactivate
 ```
