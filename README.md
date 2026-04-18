@@ -234,5 +234,4 @@ For issues or questions:
 
 ---
 
-**Last Updated**: 2024
-**Version**: 2.0 (Enhanced with comprehensive improvements)
+The skill is licensed under MIT-0. Free to use, modify, and redistribute. No attribution required.
