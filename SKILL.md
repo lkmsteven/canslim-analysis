@@ -1,272 +1,131 @@
 ---
 name: canslim-analysis
-description: Executes a hybrid quantitative and qualitative CANSLIM analysis on US stocks using a fixed schema and a modular Python pipeline, returning a ranked shortlist.
-user-invocable: true
-requires:
-  - python3
-os:
-  - macos
-  - linux
-  - windows
+description: Run and validate the local quantitative and Codex-enriched CANSLIM analysis workflow through its supported CLI.
 ---
 
-# CANSLIM Hybrid Analyzer
+# CANSLIM Analysis Skill
 
-Analyze US stocks using a three-stage modular pipeline:
+Use this skill to run the hybrid CANSLIM workflow in this project. Quantitative screening, enrichment validation, final scoring, status reporting, validation, JSON generation, and PDF generation are performed by the project CLI. Codex performs qualitative research, records only verified findings in the findings file, and explains their limitations in the user-facing response.
 
-1. Run a quantitative screen to filter candidates by earnings, leadership, and price/volume behavior.
-2. Use OpenClaw AI enrichment to evaluate qualitative catalysts, float tightness, and institutional quality.
-3. Generate a final ranked CANSLIM report using a fixed scoring contract.
+This workflow is agent-neutral. Never edit generated JSON only to make a stage pass.
 
-## When to use
+## Requirements
 
-Use this skill when the user asks to:
+- Run commands from `Projects/canslim-analysis`.
+- Use the project-local `.venv` environment created from `pyproject.toml`.
+- Do not install dependencies globally.
+- Do not disclose or enter credentials; the current workflow requires none.
+- Treat market data and qualitative conclusions as uncertain and non-guaranteed.
 
-- Run a comprehensive CANSLIM analysis on US stocks.
-- Screen for market leaders combining both quantitative strength and recent catalysts.
-- Generate a ranked shortlist with clear met/missed CANSLIM criteria.
-- Audit or reproduce the pipeline with deterministic JSON handoffs.
+## Operating Workflow
 
-## Required files
+1. Inspect state before writing artifacts:
 
-Expected local files (located in `Scripts/` directory):
+   ```text
+   python -m canslim_analysis status --json
+   ```
 
-- `Scripts/quantitative_analyzer.py`
-- `Scripts/final_process.py`
-- `Scripts/pdf_report_generator.py`
-- `Scripts/requirements.txt`
+2. Run quantitative screening when the state is `not-started`:
 
-Expected generated files (in `Scripts/` directory):
+   ```text
+   python -m canslim_analysis quantitative
+   ```
 
-- `Scripts/intermediate_canslim.json`
-- `Scripts/enriched_canslim.json`
-- `Scripts/final_canslim_report.json`
-- `Scripts/canslim_analysis.log`
-- `Scripts/out/canslim_report_{date}.pdf` (PDF report with formatted analysis)
+   Use `--limit`, `--workers`, thresholds, or `--output-dir` only when the user requested a bounded or customized run.
 
-## Canonical JSON contract
+3. Generate the qualitative worksheet:
 
-The quantitative phase owns `Quantitative_Metrics`.
+   ```text
+   python -m canslim_analysis prepare-enrichment
+   ```
 
-The AI phase must **preserve every field** already present in `Quantitative_Metrics` and must **only** fill `AI_Qualitative_Checks`.
+4. Research candidates for fresh catalysts, float tightness, and institutional quality. Use reliable, current evidence. Do not present general market commentary as ticker-specific confirmation.
 
-### Intermediate schema
+5. Fill `out/enrichment_template.json` without changing its shape. Every true claim requires non-empty evidence or rationale in the matching details field. Save completed findings outside generated state if the user should retain them, or to a path supplied by the user.
 
-```json
-{
-  "Metadata": {
-    "Schema_Version": "2.1",
-    "Date_Run": "2026-03-15",
-    "Market_Direction_M": "Confirmed Uptrend",
-    "Total_Universe_Scanned": 503,
-    "Successfully_Evaluated": 487,
-    "Failed_Fetches": 16,
-    "Skipped_For_Missing_Fundamentals": 39,
-    "Stocks_Passed_To_AI": 27
-  },
-  "Stocks": [
-    {
-      "Ticker": "XYZ",
-      "Company_Name": "XYZ Corp",
-      "Quantitative_Metrics": {
-        "C_Met": true,
-        "C_Details": "Q EPS Growth: 38.0%",
-        "Quarterly_EPS_Growth": 0.38,
-        "EPS_Accelerating": false,
-        "A_Met": true,
-        "A_Details": "Annual EPS CAGR: 31.0%",
-        "Annual_EPS_Growth": 0.31,
-        "L_Met": true,
-        "RS_Rating": 92.4,
-        "S_Quant_Met": true,
-        "S_Quant_Details": "Today volume >= 1.5x 50-day average, Up-day volume skew positive",
-        "S_Score": 2,
-        "Today_Volume_Strong": true,
-        "Volume_Skew_Positive": true,
-        "I_Quant_Flag": true,
-        "I_Quant_Details": "78.0% institutional ownership",
-        "N_Technical_Met": true,
-        "N_Technical_Details": "Within 4.0% of 52-week high",
-        "Near_52_Week_High": true,
-        "Recent_Breakout": false,
-        "Pct_From_High": 0.04,
-        "Current_Price": 145.2,
-        "Float_Shares": 42000000,
-        "Institutional_Ownership": 0.78
-      },
-      "AI_Qualitative_Checks_Pending": {
-        "N_New_Catalyst": null,
-        "N_Catalyst_Details": "",
-        "S_Float_Tightness": null,
-        "S_Float_Details": "",
-        "I_Institutional_Quality": null,
-        "I_Institutional_Details": ""
-      }
-    }
-  ]
-}
+6. Validate and merge findings:
+
+   ```text
+   python -m canslim_analysis enrich --findings <findings.json>
+   ```
+
+7. Generate final JSON:
+
+   ```text
+   python -m canslim_analysis finalize
+   ```
+
+8. Generate the PDF:
+
+   ```text
+   python -m canslim_analysis report
+   ```
+
+For a single orchestrated invocation, after research is complete use:
+
+```text
+python -m canslim_analysis run --findings <findings.json>
 ```
 
-## Enriched schema
-The enriched schema must be the same as the intermediate schema, plus AI_Qualitative_Checks.
-```json
+Never use `--unverified-fallback` unless the user explicitly accepts unverified qualitative conclusions. It conservatively sets `N_New_Catalyst`, `S_Float_Tightness`, and `I_Institutional_Quality` to false and must be disclosed as unverified.
 
-{
-  "Stocks": [
-    {
-      "Ticker": "XYZ",
-      "Company_Name": "XYZ Corp",
-      "Quantitative_Metrics": { "...": "unchanged and preserved" },
-      "AI_Qualitative_Checks_Pending": {
-        "N_New_Catalyst": null,
-        "N_Catalyst_Details": "",
-        "S_Float_Tightness": null,
-        "S_Float_Details": "",
-        "I_Institutional_Quality": null,
-        "I_Institutional_Details": ""
-      },
-      "AI_Qualitative_Checks": {
-        "N_New_Catalyst": true,
-        "N_Catalyst_Details": "New product launch and raised guidance",
-        "S_Float_Tightness": true,
-        "S_Float_Details": "Tight float supported by low float and buyback activity",
-        "I_Institutional_Quality": true,
-        "I_Institutional_Details": "High-quality institutional sponsorship improving"
-      }
-    }
-  ]
-}
-```
+## Qualitative Safety Rules
 
-## Execution rules
-Follow this checklist exactly:
+- `N_New_Catalyst` may be true only for a verified fresh catalyst.
+- `S_Float_Tightness` may be true only for verified float, buyback, or equivalent supply evidence.
+- `I_Institutional_Quality` may be true only for verified institutional-quality evidence.
+- Missing, stale, ambiguous, or contradictory evidence requires the corresponding value to remain false.
+- Never fabricate catalysts, float conclusions, ownership conclusions, prices, scores, or recommendations.
+- Disclose missing data and analysis limitations in `Notes & Caveats:`.
 
-1. Verify files: Confirm Scripts/quantitative_analyzer.py, Scripts/final_process.py, Scripts/pdf_report_generator.py, and Scripts/requirements.txt exist.
+## Successful Response Contract
 
-2. Create environment:
-```bash
-python3 -m venv canslim_analysis
-source canslim_analysis/bin/activate  # Linux/Mac
-canslim_analysis\Scripts\activate  # Windows
-```
+Return this structure:
 
-3. Install dependencies:
-```bash
-pip install --no-cache-dir -r Scripts/requirements.txt
-```
-4. Run quantitative analysis:
-```bash
-python Scripts/quantitative_analyzer.py
-```
-
-5. Verify intermediate output: Confirm Scripts/intermediate_canslim.json exists and contains Metadata, Stocks, Quantitative_Metrics, and AI_Qualitative_Checks_Pending.
-
-6. Run OpenClaw AI enrichment:
-- Read Scripts/intermediate_canslim.json.
-
-- For each stock, preserve Ticker, Company_Name, and the entire Quantitative_Metrics object unchanged.
-
-- Add AI_Qualitative_Checks with values for:
-
-   - N_New_Catalyst
-   - N_Catalyst_Details
-   - S_Float_Tightness
-   - S_Float_Details
-   - I_Institutional_Quality
-   - I_Institutional_Details
-
-7. Write enriched output: Scripts/enriched_canslim.json
-
-8. Run final processing:
-```bash
-python Scripts/final_process.py
-```
-This will automatically generate both the JSON report and the PDF report.
-
-9. Display results: Read Scripts/final_canslim_report.json and present the ranked list of stocks, CANSLIM scores, met criteria, missed criteria, price, RS rating, and catalyst note.
-
-10. PDF Report: The PDF report is generated in `Scripts/out/canslim_report_{date}.pdf` with professional formatting including:
-    - Report header with metadata and score distribution
-    - Individual stock sections with grades and CANSLIM criteria status
-    - Key metrics tables (RS Rating, EPS growth, institutional ownership)
-    - Detailed analysis for each criterion (C, A, N, S, L, I, M)
-
-11. Delivery: Always attach the CANSLIM report PDF to the user-facing response when the analysis completes successfully.
-
-12. Cleanup:
-```bash
-deactivate
-```
-
-## Scoring contract
-Use this exact final scoring model:
-
-C: Quantitative_Metrics.C_Met
-
-A: Quantitative_Metrics.A_Met
-
-L: Quantitative_Metrics.L_Met
-
-M: Metadata.Market_Direction_M == "Confirmed Uptrend"
-
-N: AI_Qualitative_Checks.N_New_Catalyst == true
-
-S: Quantitative_Metrics.S_Quant_Met == true and AI_Qualitative_Checks.S_Float_Tightness == true
-
-I: AI_Qualitative_Checks.I_Institutional_Quality == true
-
-## Interpretation guidance
-N_Technical_Met is supporting technical context, not the scored N letter by itself.
-
-I_Quant_Flag is reference context, not the scored I letter by itself.
-
-A stock can have strong technical N support and still miss final N if OpenClaw cannot verify a fresh catalyst.
-
-A stock can have strong volume accumulation and still miss final S if OpenClaw cannot verify tight float or buyback support.
-
-## Output format
-
-Return the final user-facing answer in this structure:
-
+```text
 Market Environment:
-<1-2 sentence assessment of the M criterion>
+<1-2 sentence assessment of M>
 
 Top CANSLIM Candidates:
 
 | Rank | Ticker | Company | CANSLIM Score | Met Criteria | Missed Criteria | Price | RS Rating | AI Catalyst Note |
-|------|--------|---------|---------------|--------------|-----------------|-------|-----------|------------------|
-| 1 | XYZ | XYZ Corp | 6/7 | C, A, N, S, L, I | M | $145.20 | 92.4 | New product launch and raised guidance |
+|---|---|---|---|---|---|---|---|---|
+| 1 | EXAMPLE | Example Company | 7/7 | C, A, N, S, L, I, M | None | $100.00 | 99.0 | Verified catalyst summary |
 
 AI Catalyst Insights:
-
-XYZ: Fresh catalyst confirmed; float tightness and institutional sponsorship also verified.
+<Concise verified insight by selected candidate.>
 
 Notes & Caveats:
-Mention missing data, lack of catalyst confirmation, or market-trend caution when relevant.
+<Missing data, unverified checks, market-data delay, and limitations.>
 
-## Constraints
-Never install dependencies globally.
+This analysis is educational, not investment advice. Conduct independent research and consider risk before making decisions.
+```
 
-Always use the canslim_analysis virtual environment.
+## Failure Response Contract
 
-Use only files generated by the current skill run.
+Return this structure:
 
-Do not fabricate catalysts, float conclusions, or institutional-quality claims.
+```text
+Failed phase: <setup|quantitative|enrichment|final processing|PDF reporting|validation>
+Error: <concise actionable error>
+Missing or invalid fields: <field list, or None>
+Next step: <smallest useful action>
+```
 
-If no catalyst is found, set N_New_Catalyst to false and explain briefly.
+Map CLI exit codes as follows:
 
-If the AI phase cannot verify S or I, set the corresponding value to false instead of leaving it ambiguous.
+| Code | Phase or meaning |
+|---|---|
+| 0 | Success or an intentional findings stop. |
+| 1 | Unexpected error; retry diagnosis before repeating the command. |
+| 2 | Usage/configuration error. |
+| 3 | Schema or validation failure. |
+| 4 | Missing predecessor artifact. |
+| 5 | External market-data failure. |
+| 6 | PDF report-generation failure. |
 
-Do not claim results are guaranteed investment advice. Always include disclaimers about risks and the need for further research.
+## Validation Rules
 
-## Failure handling
-
-If execution fails:
-
-State exactly which phase failed: Quantitative, AI Enrichment, or Final Processing.
-
-Include the error message when available.
-
-Recommend the smallest next step.
-
-If the failure is a schema mismatch, state which required field is missing or was overwritten.
+- Run `python -m canslim_analysis status --json` after an unexpected interruption.
+- Use `python -m canslim_analysis validate --stage quantitative|enriched|final` to inspect a specific JSON artifact.
+- If code and documentation disagree, stop the workflow and repair the defect rather than hand-editing generated state.

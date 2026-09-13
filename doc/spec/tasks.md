@@ -125,7 +125,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-014 Reframe the project skill for Codex
 
-- **Status:** `todo`
+- **Status:** `in-progress`
 - **Depends on:** T-013
 - **Requirements:** RQ-001, RQ-006, RQ-007
 - **Design sections:** §4 Codex Skill Contract
