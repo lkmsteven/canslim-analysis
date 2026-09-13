@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 from time import sleep
 
 from canslim_analysis.errors import (
@@ -48,9 +49,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     quantitative = subparsers.add_parser("quantitative")
     _add_quantitative_arguments(quantitative)
+    prepare = subparsers.add_parser("prepare-enrichment")
+    prepare.add_argument("--input")
+    prepare.add_argument("--output-dir")
 
     for command in COMMANDS:
-        if command != "quantitative":
+        if command not in {"quantitative", "prepare-enrichment"}:
             subparsers.add_parser(command)
 
     return parser
@@ -114,6 +118,28 @@ def _default_quantitative_providers(
         fetch_stock_yfinance,
     )
 
+
+def _prepare_enrichment(arguments: argparse.Namespace) -> int:
+    """Run qualitative template preparation."""
+
+    from canslim_analysis.paths import INTERMEDIATE_ARTIFACT, resolve_artifact_path
+    from canslim_analysis.pipeline.enrichment import prepare_enrichment_template
+
+    input_path = (
+        Path(arguments.input).expanduser().resolve()
+        if arguments.input
+        else resolve_artifact_path(
+            INTERMEDIATE_ARTIFACT,
+            output_dir=arguments.output_dir,
+        )
+    )
+    output_path = prepare_enrichment_template(
+        input_path,
+        output_dir=arguments.output_dir,
+    )
+    print(f"Enrichment template saved to {output_path}")
+    return 0
+
     return QuantitativeProviders(
         fetch_universe=lambda runtime_config: fetch_sp500_tickers(
             runtime_config,
@@ -155,6 +181,8 @@ def main(
                 f"saved to {result.output_path}"
             )
             return 0
+        if parsed.command == "prepare-enrichment":
+            return _prepare_enrichment(parsed)
     except ConfigurationError as exc:
         return _fail(2, exc)
     except SchemaValidationError as exc:
