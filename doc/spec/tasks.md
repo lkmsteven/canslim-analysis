@@ -17,7 +17,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-002 Add configuration, paths, logging, and error foundation
 
-- **Status:** `todo`
+- **Status:** `done`
 - **Depends on:** T-001
 - **Requirements:** RQ-004, RQ-011, RQ-012, RQ-013
 - **Design sections:** §3.2 Module Responsibilities, §6 Artifact and Path Strategy, §9 Error-Handling Strategy
