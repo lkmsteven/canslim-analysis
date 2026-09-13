@@ -56,9 +56,12 @@ def build_parser() -> argparse.ArgumentParser:
     enrich.add_argument("--input")
     enrich.add_argument("--findings", required=True)
     enrich.add_argument("--output-dir")
+    finalize = subparsers.add_parser("finalize")
+    finalize.add_argument("--input")
+    finalize.add_argument("--output-dir")
 
     for command in COMMANDS:
-        if command not in {"quantitative", "prepare-enrichment", "enrich"}:
+        if command not in {"quantitative", "prepare-enrichment", "enrich", "finalize"}:
             subparsers.add_parser(command)
 
     return parser
@@ -168,6 +171,25 @@ def _enrich(arguments: argparse.Namespace) -> int:
     print(f"Enriched analysis saved to {output_path}")
     return 0
 
+
+def _finalize(arguments: argparse.Namespace) -> int:
+    """Validate enriched input and persist final scores."""
+
+    from canslim_analysis.paths import ENRICHED_ARTIFACT, resolve_artifact_path
+    from canslim_analysis.pipeline.reporting import finalize_report
+
+    input_path = (
+        Path(arguments.input).expanduser().resolve()
+        if arguments.input
+        else resolve_artifact_path(
+            ENRICHED_ARTIFACT,
+            output_dir=arguments.output_dir,
+        )
+    )
+    output_path = finalize_report(input_path, output_dir=arguments.output_dir)
+    print(f"Final report saved to {output_path}")
+    return 0
+
     return QuantitativeProviders(
         fetch_universe=lambda runtime_config: fetch_sp500_tickers(
             runtime_config,
@@ -213,6 +235,8 @@ def main(
             return _prepare_enrichment(parsed)
         if parsed.command == "enrich":
             return _enrich(parsed)
+        if parsed.command == "finalize":
+            return _finalize(parsed)
     except ConfigurationError as exc:
         return _fail(2, exc)
     except SchemaValidationError as exc:

@@ -89,7 +89,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-010 Implement final report generation CLI
 
-- **Status:** `todo`
+- **Status:** `done`
 - **Depends on:** T-009
 - **Requirements:** RQ-002, RQ-003, RQ-004, RQ-005
 - **Design sections:** §5.1 Commands, §6 Artifact and Path Strategy, §7 Data Contracts
