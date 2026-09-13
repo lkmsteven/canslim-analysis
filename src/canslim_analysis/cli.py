@@ -70,6 +70,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     validate_parser.add_argument("--input")
     validate_parser.add_argument("--output-dir")
+    report = subparsers.add_parser("report")
+    report.add_argument("--input")
+    report.add_argument("--output-dir")
 
     for command in COMMANDS:
         if command not in {
@@ -79,6 +82,7 @@ def build_parser() -> argparse.ArgumentParser:
             "finalize",
             "status",
             "validate",
+            "report",
         }:
             subparsers.add_parser(command)
 
@@ -263,6 +267,25 @@ def _validate(arguments: argparse.Namespace) -> int:
     print(f"Valid {arguments.stage} artifact: {path}")
     return 0
 
+
+def _report(arguments: argparse.Namespace) -> int:
+    """Render an existing final report to PDF."""
+
+    from canslim_analysis.paths import FINAL_REPORT_ARTIFACT, resolve_artifact_path
+    from canslim_analysis.reporting.pdf import render_pdf_report
+
+    input_path = (
+        Path(arguments.input).expanduser().resolve()
+        if arguments.input
+        else resolve_artifact_path(
+            FINAL_REPORT_ARTIFACT,
+            output_dir=arguments.output_dir,
+        )
+    )
+    output_path = render_pdf_report(input_path, output_dir=arguments.output_dir)
+    print(f"PDF report saved to {output_path}")
+    return 0
+
     return QuantitativeProviders(
         fetch_universe=lambda runtime_config: fetch_sp500_tickers(
             runtime_config,
@@ -314,6 +337,8 @@ def main(
             return _status(parsed)
         if parsed.command == "validate":
             return _validate(parsed)
+        if parsed.command == "report":
+            return _report(parsed)
     except ConfigurationError as exc:
         return _fail(2, exc)
     except SchemaValidationError as exc:

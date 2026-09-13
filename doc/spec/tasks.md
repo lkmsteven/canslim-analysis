@@ -107,7 +107,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-012 Implement PDF report generation CLI
 
-- **Status:** `todo`
+- **Status:** `in-progress`
 - **Depends on:** T-010
 - **Requirements:** RQ-002, RQ-004, RQ-005, RQ-007
 - **Design sections:** §3.2 Module Responsibilities, §5.1 Commands, §6 Artifact and Path Strategy
