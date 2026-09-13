@@ -152,6 +152,15 @@ def _default_quantitative_providers(
         fetch_stock_yfinance,
     )
 
+    return QuantitativeProviders(
+        fetch_universe=lambda runtime_config: fetch_sp500_tickers(
+            runtime_config,
+            sleeper=sleep,
+        ),
+        fetch_market_history=fetch_market_history_yfinance,
+        fetch_stock=lambda ticker: fetch_stock_yfinance(ticker, config),
+    )
+
 
 def _prepare_enrichment(arguments: argparse.Namespace) -> int:
     """Run qualitative template preparation."""

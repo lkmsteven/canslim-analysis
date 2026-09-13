@@ -13,6 +13,7 @@ from canslim_analysis.cli import build_parser, main
 from canslim_analysis.errors import ExternalDataError
 from canslim_analysis.pipeline.config import PipelineConfig
 from canslim_analysis.pipeline.quantitative import QuantitativeProviders
+from canslim_analysis.cli import _default_quantitative_providers
 
 
 def market_history(index: str) -> list[float]:
@@ -90,6 +91,17 @@ def test_quantitative_parser_accepts_operational_overrides() -> None:
     assert arguments.workers == 2
     assert arguments.min_eps_growth == 0.3
     assert arguments.output_dir == "custom-out"
+
+
+def test_default_quantitative_providers_are_configured() -> None:
+    """The default provider bundle is returned for live CLI execution."""
+
+    providers = _default_quantitative_providers(PipelineConfig())
+
+    assert isinstance(providers, QuantitativeProviders)
+    assert callable(providers.fetch_universe)
+    assert callable(providers.fetch_market_history)
+    assert callable(providers.fetch_stock)
 
 
 def test_quantitative_stage_writes_schema_metadata_and_ranked_candidates(
