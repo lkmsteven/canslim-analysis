@@ -3,6 +3,22 @@
 from __future__ import annotations
 
 import argparse
+import sys
+from time import sleep
+
+from canslim_analysis.errors import (
+    ArtifactNotFoundError,
+    CanslimError,
+    ConfigurationError,
+    ExternalDataError,
+    ReportGenerationError,
+    SchemaValidationError,
+)
+from canslim_analysis.pipeline.config import PipelineConfig
+from canslim_analysis.pipeline.quantitative import (
+    QuantitativeProviders,
+    run_quantitative_analysis,
+)
 
 
 COMMANDS = (
@@ -30,13 +46,89 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command")
 
+    quantitative = subparsers.add_parser("quantitative")
+    _add_quantitative_arguments(quantitative)
+
     for command in COMMANDS:
-        subparsers.add_parser(command)
+        if command != "quantitative":
+            subparsers.add_parser(command)
 
     return parser
 
 
-def main() -> int:
+def _add_quantitative_arguments(parser: argparse.ArgumentParser) -> None:
+    """Add every operationally useful quantitative option."""
+
+    parser.add_argument("--limit", type=int)
+    parser.add_argument("--workers", type=int)
+    parser.add_argument("--timeout", type=float)
+    parser.add_argument("--retries", type=int)
+    parser.add_argument("--retry-delay", type=float)
+    parser.add_argument("--min-eps-growth", type=float)
+    parser.add_argument("--min-annual-eps-growth", type=float)
+    parser.add_argument("--min-rs-rating", type=float)
+    parser.add_argument("--min-volume-ratio", type=float)
+    parser.add_argument("--min-volume-skew", type=float)
+    parser.add_argument("--min-institutional-ownership", type=float)
+    parser.add_argument("--near-high-threshold", type=float)
+    parser.add_argument("--output-dir")
+
+
+def _config_from_arguments(arguments: argparse.Namespace) -> PipelineConfig:
+    """Convert CLI values into validated pipeline configuration."""
+
+    return PipelineConfig(
+        min_eps_growth=_option(arguments.min_eps_growth, 0.25),
+        min_annual_eps_growth=_option(arguments.min_annual_eps_growth, 0.25),
+        min_rs_rating=_option(arguments.min_rs_rating, 80.0),
+        min_volume_ratio=_option(arguments.min_volume_ratio, 1.5),
+        min_volume_skew=_option(arguments.min_volume_skew, 1.2),
+        min_institutional_ownership=_option(
+            arguments.min_institutional_ownership, 0.30
+        ),
+        near_high_threshold=_option(arguments.near_high_threshold, 0.10),
+        market_lookback_days=200,
+        min_history_days=250,
+        max_workers=_option(arguments.workers, 5),
+        universe_limit=arguments.limit,
+        request_timeout=_option(arguments.timeout, 10.0),
+        max_retries=_option(arguments.retries, 3),
+        retry_delay=_option(arguments.retry_delay, 2.0),
+    )
+
+
+def _option[T](value: T | None, default: T) -> T:
+    """Return an optional value or its documented default."""
+
+    return default if value is None else value
+
+
+def _default_quantitative_providers(
+    config: PipelineConfig,
+) -> QuantitativeProviders:
+    """Build the default HTTP and market-data providers."""
+
+    from canslim_analysis.pipeline.market_data import (
+        fetch_market_history_yfinance,
+        fetch_sp500_tickers,
+        fetch_stock_yfinance,
+    )
+
+    return QuantitativeProviders(
+        fetch_universe=lambda runtime_config: fetch_sp500_tickers(
+            runtime_config,
+            sleeper=sleep,
+        ),
+        fetch_market_history=fetch_market_history_yfinance,
+        fetch_stock=lambda ticker: fetch_stock_yfinance(ticker, config),
+    )
+
+
+def main(
+    arguments: list[str] | None = None,
+    *,
+    providers: QuantitativeProviders | None = None,
+) -> int:
     """Run the command-line interface.
 
     Returns:
@@ -44,10 +136,47 @@ def main() -> int:
     """
 
     parser = build_parser()
-    arguments = parser.parse_args()
+    parsed = parser.parse_args(arguments)
 
-    if arguments.command is None:
+    if parsed.command is None:
         parser.print_help()
         return 0
 
-    return 0
+    try:
+        if parsed.command == "quantitative":
+            config = _config_from_arguments(parsed)
+            result = run_quantitative_analysis(
+                config,
+                providers or _default_quantitative_providers(config),
+                output_dir=parsed.output_dir,
+            )
+            print(
+                f"Quantitative analysis complete: {result.passed_count} candidates "
+                f"saved to {result.output_path}"
+            )
+            return 0
+    except ConfigurationError as exc:
+        return _fail(2, exc)
+    except SchemaValidationError as exc:
+        return _fail(3, exc)
+    except ArtifactNotFoundError as exc:
+        return _fail(4, exc)
+    except ExternalDataError as exc:
+        return _fail(5, exc)
+    except ReportGenerationError as exc:
+        return _fail(6, exc)
+    except CanslimError as exc:
+        return _fail(1, exc)
+    except Exception as exc:
+        print(f"Unexpected internal error: {exc}", file=sys.stderr)
+        return 1
+
+    parser.print_error(f"Command '{parsed.command}' is not implemented yet.")
+    return 2
+
+
+def _fail(exit_code: int, error: Exception) -> int:
+    """Print one deliberate error and return its stable exit code."""
+
+    print(f"error: {error}", file=sys.stderr)
+    return exit_code

@@ -5,6 +5,17 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from html.parser import HTMLParser
+from time import sleep
+from typing import Any
+
+from canslim_analysis.pipeline.quantitative import (
+    PriceBar,
+    analyze_institutional_ownership,
+    analyze_new_highs,
+    analyze_supply_demand,
+    calculate_quarterly_acceleration,
+    safe_float,
+)
 
 from canslim_analysis.errors import ExternalDataError, SchemaValidationError
 from canslim_analysis.pipeline.config import PipelineConfig
@@ -183,3 +194,131 @@ def fetch_sp500_tickers(
     raise ExternalDataError(
         f"Failed to fetch S&P 500 tickers from {url}: {last_error}"
     )
+
+
+def _eps_values_from_frame(frame: Any, row_names: tuple[str, ...]) -> list[float]:
+    """Extract numeric EPS values from a provider accounting frame."""
+
+    if frame is None or getattr(frame, "empty", True):
+        return []
+    for row_name in row_names:
+        if row_name not in getattr(frame, "index", []):
+            continue
+        values = [safe_float(value) for value in frame.loc[row_name].tolist()]
+        numeric = [value for value in values if value is not None]
+        if numeric:
+            return numeric
+    return []
+
+
+def _annual_eps_growth(stock: Any) -> float | None:
+    """Calculate annual diluted/basic EPS CAGR from provider statements."""
+
+    values = _eps_values_from_frame(stock.income_stmt, ("Diluted EPS", "Basic EPS"))
+    if len(values) < 3:
+        return None
+    newest, oldest = values[0], values[-1]
+    periods = len(values) - 1
+    if newest <= 0 or oldest <= 0:
+        return None
+    return (newest / oldest) ** (1 / periods) - 1
+
+
+def fetch_market_history_yfinance(index_name: str) -> list[float] | None:
+    """Fetch one market index's one-year Close series.
+
+    Args:
+        index_name: Canonical market-index name used by the analysis stage.
+
+    Returns:
+        Ordered Close values, or ``None`` when no usable history is returned.
+    """
+
+    import yfinance as yf
+
+    from canslim_analysis.pipeline.quantitative import MARKET_INDEXES
+
+    ticker = MARKET_INDEXES.get(index_name, index_name)
+    frame = yf.Ticker(ticker).history(period="1y", auto_adjust=False)
+    if frame.empty or "Close" not in frame:
+        return None
+    values = [safe_float(value) for value in frame["Close"].tolist()]
+    return [value for value in values if value is not None]
+
+
+def fetch_stock_yfinance(
+    ticker: str,
+    config: Any,
+    *,
+    sleeper: Callable[[float], None] = sleep,
+) -> dict[str, Any] | None:
+    """Fetch fundamentals and normalized price bars from Yahoo Finance.
+
+    Args:
+        ticker: Equity ticker to fetch.
+        config: Runtime configuration controlling history and retry behavior.
+        sleeper: Delay callable injected for deterministic tests.
+
+    Returns:
+        A normalized quantitative input row, or ``None`` after bounded failures.
+    """
+
+    last_error: Exception | None = None
+    for attempt in range(config.max_retries):
+        try:
+            import yfinance as yf
+
+            stock = yf.Ticker(ticker)
+            info = stock.info or {}
+            frame = stock.history(period="1y", auto_adjust=False)
+            if frame.empty or len(frame) < config.min_history_days:
+                return None
+
+            bars = [
+                PriceBar(
+                    open=float(row["Open"]),
+                    close=float(row["Close"]),
+                    volume=float(row["Volume"]),
+                )
+                for _, row in frame.iterrows()
+            ]
+            current_price = bars[-1].close
+            price_1y_ago = bars[0].close
+            if price_1y_ago == 0:
+                return None
+
+            quarterly = calculate_quarterly_acceleration(
+                _eps_values_from_frame(
+                    stock.quarterly_income_stmt,
+                    ("Diluted EPS", "Basic EPS"),
+                )
+            )
+            quarterly_growth = safe_float(info.get("earningsQuarterlyGrowth"))
+            if quarterly_growth is None:
+                quarterly_growth = quarterly["latest_yoy_growth"]
+            institutional = analyze_institutional_ownership(info, config)
+            supply = analyze_supply_demand(bars, config)
+            technical = analyze_new_highs(bars, config)
+
+            return {
+                "Ticker": ticker,
+                "Company_Name": info.get("shortName", ticker),
+                "Current_Price": round(current_price, 2),
+                "Return_1Y": (current_price - price_1y_ago) / abs(price_1y_ago),
+                "Quarterly_EPS_Growth": quarterly_growth,
+                "EPS_Accelerating": quarterly["is_accelerating"],
+                "Annual_EPS_Growth": _annual_eps_growth(stock),
+                "Float_Shares": safe_float(info.get("floatShares")),
+                "Institutional_Ownership": institutional["Institutional_Ownership"],
+                **supply,
+                "I_Quant_Flag": institutional["I_Quant_Flag"],
+                "I_Quant_Details": institutional["I_Quant_Details"],
+                **technical,
+            }
+        except Exception as exc:
+            last_error = exc
+            if attempt < config.max_retries - 1:
+                sleeper(config.retry_delay)
+
+    logger.warning("%s failed after retries: %s", ticker, last_error)
+    return None

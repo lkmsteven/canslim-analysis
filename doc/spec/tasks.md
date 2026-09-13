@@ -53,7 +53,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-006 Implement the quantitative CLI stage
 
-- **Status:** `todo`
+- **Status:** `done`
 - **Depends on:** T-003, T-004, T-005
 - **Requirements:** RQ-002, RQ-003, RQ-004, RQ-011
 - **Design sections:** §5.1 Commands, §6 Artifact and Path Strategy, §8.1 Configuration Object, §8.2 Provider Isolation

@@ -1,15 +1,20 @@
-"""Pure quantitative CANSLIM transformations."""
+"""Quantitative transformations and screening-stage orchestration."""
 
 from __future__ import annotations
 
+import concurrent.futures
+import json
 import logging
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
 from math import isfinite
 from typing import Any
 
-from canslim_analysis.errors import SchemaValidationError
+from canslim_analysis.errors import ExternalDataError, SchemaValidationError
 from canslim_analysis.pipeline.config import PipelineConfig
+from canslim_analysis.paths import INTERMEDIATE_ARTIFACT, resolve_artifact_path
 
 
 logger = logging.getLogger(__name__)
@@ -23,6 +28,19 @@ MARKET_INDEXES = {
     "Nasdaq": "^IXIC",
 }
 
+UniverseProvider = Callable[[PipelineConfig], Sequence[str]]
+MarketHistoryProvider = Callable[[str], Sequence[float] | None]
+StockDataProvider = Callable[[str], Mapping[str, Any] | None]
+
+
+@dataclass(frozen=True)
+class QuantitativeProviders:
+    """External provider callables required by the quantitative stage."""
+
+    fetch_universe: UniverseProvider
+    fetch_market_history: MarketHistoryProvider
+    fetch_stock: StockDataProvider
+
 
 @dataclass(frozen=True)
 class PriceBar:
@@ -31,6 +49,17 @@ class PriceBar:
     open: float
     close: float
     volume: float
+
+
+@dataclass(frozen=True)
+class QuantitativeRunResult:
+    """Artifacts and counts produced by one quantitative run."""
+
+    output_path: Path
+    market_direction: str
+    evaluated_count: int
+    failed_fetches: int
+    passed_count: int
 
 
 @dataclass(frozen=True)
@@ -552,3 +581,131 @@ def select_quantitative_candidates(
         evaluated_count=len(stock_rows),
         skipped_for_missing_fundamentals=skipped,
     )
+
+
+def _write_json_atomic(path: Path, data: Mapping[str, Any]) -> None:
+    """Write canonical JSON by replacing a temporary file atomically."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = path.with_suffix(path.suffix + ".tmp")
+    try:
+        temporary_path.write_text(
+            json.dumps(data, indent=4, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        temporary_path.replace(path)
+    except BaseException:
+        temporary_path.unlink(missing_ok=True)
+        raise
+
+
+def run_quantitative_analysis(
+    config: PipelineConfig,
+    providers: QuantitativeProviders,
+    *,
+    output_dir: Path | str | None = None,
+    project_root: Path | str | None = None,
+) -> QuantitativeRunResult:
+    """Run quantitative screening and persist schema 2.1 intermediate JSON.
+
+    Args:
+        config: Validated runtime configuration.
+        providers: Injected universe, market-history, and stock providers.
+        output_dir: Optional output-directory override.
+        project_root: Project root used to derive the default output path.
+
+    Returns:
+        A summary of the persisted intermediate artifact.
+
+    Raises:
+        ExternalDataError: If no universe or no stock data can be evaluated.
+    """
+
+    try:
+        tickers = list(providers.fetch_universe(config))
+    except ExternalDataError:
+        raise
+    except Exception as exc:
+        raise ExternalDataError("Failed to fetch the equity universe") from exc
+    if config.universe_limit is not None:
+        tickers = tickers[: config.universe_limit]
+    if not tickers:
+        raise ExternalDataError("The equity universe is empty")
+
+    try:
+        market_history = {
+            index_name: providers.fetch_market_history(index_name)
+            for index_name in MARKET_INDEXES
+        }
+    except Exception as exc:
+        if isinstance(exc, ExternalDataError):
+            raise
+        raise ExternalDataError("Failed to fetch market history") from exc
+    market_direction = assess_market_direction(market_history, config)
+
+    fetched_rows: list[dict[str, Any]] = []
+    failed_fetches = 0
+    with concurrent.futures.ThreadPoolExecutor(max_workers=config.max_workers) as executor:
+        results = executor.map(
+            lambda ticker: _fetch_one_stock(ticker, providers, config),
+            tickers,
+        )
+        for result in results:
+            if result is None:
+                failed_fetches += 1
+            else:
+                fetched_rows.append(result)
+
+    if not fetched_rows:
+        raise ExternalDataError("No stock data could be evaluated")
+
+    selection = select_quantitative_candidates(fetched_rows, config)
+    output_path = resolve_artifact_path(
+        INTERMEDIATE_ARTIFACT,
+        output_dir=output_dir,
+        project_root=project_root,
+    )
+    output_data = {
+        "Metadata": {
+            "Schema_Version": "2.1",
+            "Date_Run": datetime.now().strftime("%Y-%m-%d"),
+            "Market_Direction_M": market_direction,
+            "Total_Universe_Scanned": len(tickers),
+            "Successfully_Evaluated": selection.evaluated_count,
+            "Failed_Fetches": failed_fetches,
+            "Skipped_For_Missing_Fundamentals": selection.skipped_for_missing_fundamentals,
+            "Stocks_Passed_To_AI": len(selection.passed_stocks),
+            "Fixes_Applied": [
+                "Canonical schema preserved across pipeline",
+                "A criterion uses EPS CAGR instead of ROE proxy",
+                "Technical N separated from AI catalyst N",
+                "S scoring separated into quantitative accumulation and AI float confirmation",
+                "I final scoring reserved for AI institutional-quality validation",
+            ],
+        },
+        "Stocks": selection.passed_stocks,
+    }
+    _write_json_atomic(output_path, output_data)
+
+    return QuantitativeRunResult(
+        output_path=output_path,
+        market_direction=market_direction,
+        evaluated_count=selection.evaluated_count,
+        failed_fetches=failed_fetches,
+        passed_count=len(selection.passed_stocks),
+    )
+
+
+def _fetch_one_stock(
+    ticker: str,
+    providers: QuantitativeProviders,
+    config: PipelineConfig,
+) -> dict[str, Any] | None:
+    """Fetch one stock and convert unexpected provider failures to ``None``."""
+
+    try:
+        result = providers.fetch_stock(ticker)
+    except Exception as exc:
+        logger.warning("Stock fetch failed for %s: %s", ticker, exc)
+        return None
+    return dict(result) if result is not None else None
