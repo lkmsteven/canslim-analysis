@@ -134,7 +134,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-015 Migrate and synchronize project documentation
 
-- **Status:** `todo`
+- **Status:** `done`
 - **Depends on:** T-013
 - **Requirements:** RQ-001, RQ-008, RQ-014
 - **Design sections:** §12 Documentation and Migration Design, §13 Local Setup Design
