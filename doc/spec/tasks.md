@@ -62,7 +62,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-007 Implement enrichment template generation
 
-- **Status:** `in-progress`
+- **Status:** `done`
 - **Depends on:** T-006
 - **Requirements:** RQ-002, RQ-003, RQ-006
 - **Design sections:** §5.1 Commands, §7.3 Enrichment Findings Template
@@ -71,7 +71,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-008 Implement enrichment validation and merge
 
-- **Status:** `in-progress`
+- **Status:** `done`
 - **Depends on:** T-007
 - **Requirements:** RQ-002, RQ-003, RQ-005, RQ-006
 - **Design sections:** §5.1 Commands, §7.3 Enrichment Findings Template
@@ -80,7 +80,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-009 Implement dataset validation and CANSLIM scoring
 
-- **Status:** `in-progress`
+- **Status:** `done`
 - **Depends on:** T-008
 - **Requirements:** RQ-005, RQ-010, RQ-012
 - **Design sections:** §7.1 Preserved Schema, §7.2 Scoring Algorithm
@@ -98,7 +98,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-011 Implement workflow status and standalone validation
 
-- **Status:** `in-progress`
+- **Status:** `done`
 - **Depends on:** T-010
 - **Requirements:** RQ-003, RQ-005
 - **Design sections:** §5.3 Workflow State
@@ -107,7 +107,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-012 Implement PDF report generation CLI
 
-- **Status:** `in-progress`
+- **Status:** `done`
 - **Depends on:** T-010
 - **Requirements:** RQ-002, RQ-004, RQ-005, RQ-007
 - **Design sections:** §3.2 Module Responsibilities, §5.1 Commands, §6 Artifact and Path Strategy
@@ -125,7 +125,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-014 Reframe the project skill for Codex
 
-- **Status:** `in-progress`
+- **Status:** `done`
 - **Depends on:** T-013
 - **Requirements:** RQ-001, RQ-006, RQ-007
 - **Design sections:** §4 Codex Skill Contract
@@ -143,7 +143,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-016 Remove superseded scripts and generated source-directory artifacts
 
-- **Status:** `in-progress`
+- **Status:** `done`
 - **Depends on:** T-014, T-015
 - **Requirements:** RQ-004, RQ-008, RQ-012
 - **Design sections:** §3.1 Proposed Source Layout, §12.2 Backward Compatibility
@@ -152,7 +152,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-017 Perform delivery verification and release checklist
 
-- **Status:** `todo`
+- **Status:** `done`
 - **Depends on:** T-016
 - **Requirements:** RQ-001 through RQ-014
 - **Design sections:** All approved design sections

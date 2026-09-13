@@ -290,7 +290,7 @@ External access will be isolated behind small, injectable functions or classes:
 
 CLI composition will install Yahoo Finance and Wikipedia-backed implementations. Tests will install in-memory or file-backed fakes. This avoids live network access in unit tests and allows malformed, partial, timeout, and empty external responses to be tested deterministically.
 
-No new runtime dependency is required. `pandas`, `requests`, `yfinance`, `lxml`, `tqdm`, and `reportlab` are already justified by current functionality. `pytest` will be added as a development-only test dependency.
+No new category of runtime dependency is required. Direct runtime dependencies are `requests` for HTTP retrieval, `yfinance` for market data (which supplies pandas transitively), and `reportlab` for PDF rendering. They are pinned to versions verified by local setup. The former direct `lxml` and `tqdm` dependencies are removed because the new HTML parser and orchestration do not use them. `pytest` remains a development-only test dependency.
 
 ## 9. Error-Handling Strategy
 
