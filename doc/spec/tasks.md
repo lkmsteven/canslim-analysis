@@ -35,7 +35,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-004 Implement market-direction assessment
 
-- **Status:** `todo`
+- **Status:** `done`
 - **Depends on:** T-002
 - **Requirements:** RQ-005, RQ-010, RQ-012
 - **Design sections:** §7.1 Preserved Schema, §7.2 Scoring Algorithm, §8.2 Provider Isolation
