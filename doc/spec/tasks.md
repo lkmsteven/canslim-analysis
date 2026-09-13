@@ -116,7 +116,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-013 Implement complete workflow orchestration
 
-- **Status:** `todo`
+- **Status:** `done`
 - **Depends on:** T-006, T-008, T-010, T-012
 - **Requirements:** RQ-002, RQ-003, RQ-006
 - **Design sections:** §5.2 Orchestration Flow

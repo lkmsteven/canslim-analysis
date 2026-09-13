@@ -73,6 +73,10 @@ def build_parser() -> argparse.ArgumentParser:
     report = subparsers.add_parser("report")
     report.add_argument("--input")
     report.add_argument("--output-dir")
+    run_parser = subparsers.add_parser("run")
+    _add_quantitative_arguments(run_parser)
+    run_parser.add_argument("--findings")
+    run_parser.add_argument("--unverified-fallback", action="store_true")
 
     for command in COMMANDS:
         if command not in {
@@ -83,6 +87,7 @@ def build_parser() -> argparse.ArgumentParser:
             "status",
             "validate",
             "report",
+            "run",
         }:
             subparsers.add_parser(command)
 
@@ -286,6 +291,34 @@ def _report(arguments: argparse.Namespace) -> int:
     print(f"PDF report saved to {output_path}")
     return 0
 
+
+def _run(arguments: argparse.Namespace, providers: QuantitativeProviders | None) -> int:
+    """Execute all workflow stages in dependency order."""
+
+    from canslim_analysis.pipeline.workflow import run_complete_workflow
+
+    config = _config_from_arguments(arguments)
+    result = run_complete_workflow(
+        config,
+        providers or _default_quantitative_providers(config),
+        findings_path=arguments.findings,
+        unverified_fallback=arguments.unverified_fallback,
+        output_dir=arguments.output_dir,
+    )
+    if result.stopped_for_findings:
+        print(
+            "Quantitative analysis complete; provide --findings or use "
+            "--unverified-fallback to continue qualitative enrichment."
+        )
+        return 0
+    if result.used_unverified_fallback:
+        print(
+            "Warning: qualitative checks are unverified and were conservatively "
+            "set to false."
+        )
+    print(f"CANSLIM workflow complete: {result.pdf_path}")
+    return 0
+
     return QuantitativeProviders(
         fetch_universe=lambda runtime_config: fetch_sp500_tickers(
             runtime_config,
@@ -339,6 +372,8 @@ def main(
             return _validate(parsed)
         if parsed.command == "report":
             return _report(parsed)
+        if parsed.command == "run":
+            return _run(parsed, providers)
     except ConfigurationError as exc:
         return _fail(2, exc)
     except SchemaValidationError as exc:
