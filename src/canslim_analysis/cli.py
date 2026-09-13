@@ -59,9 +59,27 @@ def build_parser() -> argparse.ArgumentParser:
     finalize = subparsers.add_parser("finalize")
     finalize.add_argument("--input")
     finalize.add_argument("--output-dir")
+    status = subparsers.add_parser("status")
+    status.add_argument("--json", dest="json_output", action="store_true")
+    status.add_argument("--output-dir")
+    validate_parser = subparsers.add_parser("validate")
+    validate_parser.add_argument(
+        "--stage",
+        choices=("quantitative", "enriched", "final"),
+        required=True,
+    )
+    validate_parser.add_argument("--input")
+    validate_parser.add_argument("--output-dir")
 
     for command in COMMANDS:
-        if command not in {"quantitative", "prepare-enrichment", "enrich", "finalize"}:
+        if command not in {
+            "quantitative",
+            "prepare-enrichment",
+            "enrich",
+            "finalize",
+            "status",
+            "validate",
+        }:
             subparsers.add_parser(command)
 
     return parser
@@ -190,6 +208,61 @@ def _finalize(arguments: argparse.Namespace) -> int:
     print(f"Final report saved to {output_path}")
     return 0
 
+
+def _status(arguments: argparse.Namespace) -> int:
+    """Classify and print the current pipeline state."""
+
+    import json as json_module
+
+    from canslim_analysis.pipeline.status import classify_workflow_state, next_command
+
+    state = classify_workflow_state(arguments.output_dir)
+    if arguments.json_output:
+        print(
+            json_module.dumps(
+                {
+                    "state": state,
+                    "next_command": next_command(state),
+                },
+                sort_keys=True,
+            )
+        )
+    else:
+        following = next_command(state)
+        print(f"Workflow state: {state}")
+        if following:
+            print(f"Next command: {following}")
+    return 0
+
+
+def _validate(arguments: argparse.Namespace) -> int:
+    """Validate one selected artifact without writing output."""
+
+    from canslim_analysis.paths import (
+        ENRICHED_ARTIFACT,
+        FINAL_REPORT_ARTIFACT,
+        INTERMEDIATE_ARTIFACT,
+        resolve_artifact_path,
+    )
+    from canslim_analysis.pipeline.status import validate_artifact
+
+    default_names = {
+        "quantitative": INTERMEDIATE_ARTIFACT,
+        "enriched": ENRICHED_ARTIFACT,
+        "final": FINAL_REPORT_ARTIFACT,
+    }
+    path = (
+        Path(arguments.input).expanduser().resolve()
+        if arguments.input
+        else resolve_artifact_path(
+            default_names[arguments.stage],
+            output_dir=arguments.output_dir,
+        )
+    )
+    validate_artifact(path, arguments.stage)
+    print(f"Valid {arguments.stage} artifact: {path}")
+    return 0
+
     return QuantitativeProviders(
         fetch_universe=lambda runtime_config: fetch_sp500_tickers(
             runtime_config,
@@ -237,6 +310,10 @@ def main(
             return _enrich(parsed)
         if parsed.command == "finalize":
             return _finalize(parsed)
+        if parsed.command == "status":
+            return _status(parsed)
+        if parsed.command == "validate":
+            return _validate(parsed)
     except ConfigurationError as exc:
         return _fail(2, exc)
     except SchemaValidationError as exc:

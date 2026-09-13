@@ -98,7 +98,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-011 Implement workflow status and standalone validation
 
-- **Status:** `todo`
+- **Status:** `in-progress`
 - **Depends on:** T-010
 - **Requirements:** RQ-003, RQ-005
 - **Design sections:** §5.3 Workflow State
