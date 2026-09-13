@@ -115,6 +115,24 @@ def test_cli_status_json_reports_not_started(
     assert output["state"] == "not-started"
 
 
+def test_cli_status_defaults_to_project_output_directory(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Status without an override uses the project-local ``out`` directory."""
+
+    monkeypatch.chdir(tmp_path)
+    output_directory = tmp_path / "out"
+    output_directory.mkdir()
+
+    exit_code = main(["status", "--json"])
+    output = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert output["state"] == "not-started"
+
+
 def test_cli_validate_missing_artifact_returns_stable_code(tmp_path: Path) -> None:
     """Validating an absent stage artifact returns exit code 4."""
 

@@ -225,7 +225,9 @@ def _status(arguments: argparse.Namespace) -> int:
 
     from canslim_analysis.pipeline.status import classify_workflow_state, next_command
 
-    state = classify_workflow_state(arguments.output_dir)
+    from canslim_analysis.paths import resolve_output_directory
+
+    state = classify_workflow_state(resolve_output_directory(arguments.output_dir))
     if arguments.json_output:
         print(
             json_module.dumps(
