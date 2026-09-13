@@ -80,7 +80,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-009 Implement dataset validation and CANSLIM scoring
 
-- **Status:** `todo`
+- **Status:** `in-progress`
 - **Depends on:** T-008
 - **Requirements:** RQ-005, RQ-010, RQ-012
 - **Design sections:** §7.1 Preserved Schema, §7.2 Scoring Algorithm
