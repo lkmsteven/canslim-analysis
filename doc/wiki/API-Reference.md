@@ -35,3 +35,17 @@ Schema version `2.1` is preserved across the refactoring.
 - M: `Metadata.Market_Direction_M == "Confirmed Uptrend"`
 
 The final score is the number of passing criteria from C, A, N, S, L, I, and M.
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | Success, or `run` intentionally stopped for findings |
+| 1 | Unexpected internal error |
+| 2 | Usage/configuration error |
+| 3 | Schema/validation failure |
+| 4 | Missing artifact |
+| 5 | External-data failure |
+| 6 | PDF-generation failure |
+
+Detailed field contracts and lifecycle rules are in [data and integrations](data-and-integrations.md).

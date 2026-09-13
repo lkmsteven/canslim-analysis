@@ -65,3 +65,5 @@ python -m canslim_analysis run --findings <findings.json>
 | Enriched output | `out/enriched_canslim.json` |
 | Final JSON | `out/final_canslim_report.json` |
 | PDF | `out/canslim_report_<date>.pdf` |
+
+If a command fails, keep the artifacts unchanged and use [troubleshooting](troubleshooting.md).

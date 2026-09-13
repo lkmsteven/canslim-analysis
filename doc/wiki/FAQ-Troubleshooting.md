@@ -27,3 +27,5 @@ No. Editing generated JSON is forbidden. A true catalyst, float, or institutiona
 ## Is this investment advice?
 
 No. The project is educational. External data may be delayed, incomplete, or wrong, and historical behavior does not guarantee future results.
+
+For a broader symptom-to-diagnosis map, see [troubleshooting](troubleshooting.md).

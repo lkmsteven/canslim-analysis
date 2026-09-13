@@ -1,6 +1,6 @@
 # Configuration
 
-Configuration is supplied by validated CLI options, not source constants.
+Configuration is supplied through validated CLI options. Code defaults exist only as documented fallbacks; operators do not edit source constants or generated JSON to change a run.
 
 Run `python -m canslim_analysis quantitative --help` for the current list. Important defaults are:
 
@@ -18,3 +18,5 @@ Run `python -m canslim_analysis quantitative --help` for the current list. Impor
 | Retry delay | `2` seconds |
 
 The output directory defaults to `out/` and can be overridden with `--output-dir`. No workflow requires editing generated JSON.
+
+Run `python -m canslim_analysis run --help` for orchestration options. The complete default inventory and evidence sources are in [artifact inventory](artifact-inventory.md); operational boundaries are in [operations](operations.md).

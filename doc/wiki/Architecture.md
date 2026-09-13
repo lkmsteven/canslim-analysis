@@ -9,7 +9,10 @@ The package separates orchestration, external access, transformation, scoring, v
 | Area | Location | Responsibility |
 |---|---|---|
 | CLI | `src/canslim_analysis/cli.py` | Argument parsing, dispatch, exit codes |
+| Errors | `src/canslim_analysis/errors.py` | Expected-failure hierarchy |
+| Paths | `src/canslim_analysis/paths.py` | Artifact names and output resolution |
 | Configuration | `src/canslim_analysis/pipeline/config.py` | Immutable validated settings |
+| Logging helper | `src/canslim_analysis/logging_setup.py` | Console/file logging implementation; not yet dispatched by CLI |
 | Market data | `src/canslim_analysis/pipeline/market_data.py` | Universe and Yahoo providers |
 | Quantitative | `src/canslim_analysis/pipeline/quantitative.py` | Screening and orchestration |
 | Enrichment | `src/canslim_analysis/pipeline/enrichment.py` | Templates, findings, merge |
@@ -31,6 +34,8 @@ Universe + market history + stock rows
 ```
 
 External providers are injected for offline tests. Pure transformations do not call Yahoo Finance or the network.
+
+The [artifact inventory](artifact-inventory.md) records the complete baseline input set. The [testing map](testing-quality.md) records behavior covered by each test module.
 
 ## Failure Boundaries
 
