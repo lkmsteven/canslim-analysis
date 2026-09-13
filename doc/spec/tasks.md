@@ -71,7 +71,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-008 Implement enrichment validation and merge
 
-- **Status:** `todo`
+- **Status:** `in-progress`
 - **Depends on:** T-007
 - **Requirements:** RQ-002, RQ-003, RQ-005, RQ-006
 - **Design sections:** §5.1 Commands, §7.3 Enrichment Findings Template

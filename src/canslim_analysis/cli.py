@@ -52,9 +52,13 @@ def build_parser() -> argparse.ArgumentParser:
     prepare = subparsers.add_parser("prepare-enrichment")
     prepare.add_argument("--input")
     prepare.add_argument("--output-dir")
+    enrich = subparsers.add_parser("enrich")
+    enrich.add_argument("--input")
+    enrich.add_argument("--findings", required=True)
+    enrich.add_argument("--output-dir")
 
     for command in COMMANDS:
-        if command not in {"quantitative", "prepare-enrichment"}:
+        if command not in {"quantitative", "prepare-enrichment", "enrich"}:
             subparsers.add_parser(command)
 
     return parser
@@ -140,6 +144,30 @@ def _prepare_enrichment(arguments: argparse.Namespace) -> int:
     print(f"Enrichment template saved to {output_path}")
     return 0
 
+
+def _enrich(arguments: argparse.Namespace) -> int:
+    """Validate findings and persist the enriched stage."""
+
+    from canslim_analysis.paths import INTERMEDIATE_ARTIFACT, resolve_artifact_path
+    from canslim_analysis.pipeline.enrichment import merge_enrichment_artifacts
+
+    quantitative_path = (
+        Path(arguments.input).expanduser().resolve()
+        if arguments.input
+        else resolve_artifact_path(
+            INTERMEDIATE_ARTIFACT,
+            output_dir=arguments.output_dir,
+        )
+    )
+    findings_path = Path(arguments.findings).expanduser().resolve()
+    output_path = merge_enrichment_artifacts(
+        quantitative_path,
+        findings_path,
+        output_dir=arguments.output_dir,
+    )
+    print(f"Enriched analysis saved to {output_path}")
+    return 0
+
     return QuantitativeProviders(
         fetch_universe=lambda runtime_config: fetch_sp500_tickers(
             runtime_config,
@@ -183,6 +211,8 @@ def main(
             return 0
         if parsed.command == "prepare-enrichment":
             return _prepare_enrichment(parsed)
+        if parsed.command == "enrich":
+            return _enrich(parsed)
     except ConfigurationError as exc:
         return _fail(2, exc)
     except SchemaValidationError as exc:
