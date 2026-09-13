@@ -26,7 +26,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-003 Isolate universe retrieval and parsing
 
-- **Status:** `todo`
+- **Status:** `done`
 - **Depends on:** T-002
 - **Requirements:** RQ-010, RQ-011, RQ-012
 - **Design sections:** §3.2 Module Responsibilities, §8.2 Provider Isolation
