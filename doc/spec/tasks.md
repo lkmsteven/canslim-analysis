@@ -143,7 +143,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-016 Remove superseded scripts and generated source-directory artifacts
 
-- **Status:** `todo`
+- **Status:** `in-progress`
 - **Depends on:** T-014, T-015
 - **Requirements:** RQ-004, RQ-008, RQ-012
 - **Design sections:** §3.1 Proposed Source Layout, §12.2 Backward Compatibility
