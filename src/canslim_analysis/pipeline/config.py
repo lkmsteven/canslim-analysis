@@ -35,6 +35,7 @@ class PipelineConfig:
     min_volume_ratio: float = 1.5
     min_volume_skew: float = 1.2
     min_institutional_ownership: float = 0.30
+    near_high_threshold: float = 0.10
     market_lookback_days: int = 200
     min_history_days: int = 250
     max_workers: int = 5
@@ -64,6 +65,7 @@ class PipelineConfig:
             0.0,
             1.0,
         )
+        self._validate_range("near_high_threshold", self.near_high_threshold, 0.0, 1.0)
         self._validate_positive_integer("market_lookback_days", self.market_lookback_days)
         self._validate_positive_integer("min_history_days", self.min_history_days)
         self._validate_positive_integer("max_workers", self.max_workers)

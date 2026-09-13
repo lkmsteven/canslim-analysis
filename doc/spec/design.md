@@ -271,6 +271,7 @@ CLI defaults will preserve current behavior:
 | Strong-volume ratio | `1.5` |
 | Positive volume-skew ratio | `1.2` |
 | Reference institutional ownership | `0.30` |
+| Near-high threshold | `0.10` |
 | Worker count | `5` |
 | Request timeout | `10` seconds |
 | Retry count | `3` |

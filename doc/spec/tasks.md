@@ -44,7 +44,7 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 
 ### T-005 Implement quantitative transformation and candidate selection
 
-- **Status:** `todo`
+- **Status:** `done`
 - **Depends on:** T-004
 - **Requirements:** RQ-005, RQ-010, RQ-011, RQ-012
 - **Design sections:** §7.1 Preserved Schema, §7.2 Scoring Algorithm, §8.1 Configuration Object
