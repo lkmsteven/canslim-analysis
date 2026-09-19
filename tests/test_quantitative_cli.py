@@ -12,6 +12,7 @@ import pytest
 from canslim_analysis.cli import build_parser, main
 from canslim_analysis.errors import ExternalDataError
 from canslim_analysis.pipeline.config import PipelineConfig
+from canslim_analysis.cli import _config_from_arguments
 from canslim_analysis.pipeline.quantitative import QuantitativeProviders
 from canslim_analysis.cli import _default_quantitative_providers
 
@@ -91,6 +92,17 @@ def test_quantitative_parser_accepts_operational_overrides() -> None:
     assert arguments.workers == 2
     assert arguments.min_eps_growth == 0.3
     assert arguments.output_dir == "custom-out"
+
+
+def test_quantitative_defaults_use_rate_limit_safe_runtime() -> None:
+    """CLI defaults preserve the slower, more reliable provider settings."""
+
+    arguments = build_parser().parse_args(["quantitative"])
+    config = _config_from_arguments(arguments)
+
+    assert config.max_workers == 3
+    assert config.max_retries == 4
+    assert config.retry_delay == 3.0
 
 
 def test_default_quantitative_providers_are_configured() -> None:

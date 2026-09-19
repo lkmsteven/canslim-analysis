@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import warnings
+
 import pytest
 
 from canslim_analysis.errors import ExternalDataError, SchemaValidationError
 from canslim_analysis.pipeline.config import PipelineConfig
 from canslim_analysis.pipeline.market_data import (
     SP500_URL,
+    _suppress_pandas4_warnings,
     fetch_sp500_tickers,
     parse_sp500_symbols,
 )
@@ -30,6 +33,26 @@ def test_parse_sp500_symbols_normalizes_b_share_symbols() -> None:
     """Ticker formatting matches Yahoo Finance's hyphenated B-share style."""
 
     assert parse_sp500_symbols(VALID_HTML) == ["BRK-B", "MMM"]
+
+
+def test_parse_sp500_symbols_excludes_follow_on_tables() -> None:
+    """Only rows from the table containing the Symbol header are accepted."""
+
+    html = """
+    <html><body>
+      <table>
+        <tr><th>Symbol</th><th>Security</th></tr>
+        <tr><td>MMM</td><td>3M</td></tr>
+      </table>
+      <table>
+        <tr><th>S&amp;P 500 companies</th></tr>
+        <tr><td>Energy</td></tr>
+        <tr><td>Financials</td></tr>
+      </table>
+    </body></html>
+    """
+
+    assert parse_sp500_symbols(html) == ["MMM"]
 
 
 def test_parse_sp500_symbols_rejects_missing_symbol_column() -> None:
@@ -70,7 +93,18 @@ def test_fetch_sp500_tickers_retries_transient_failure_then_parses() -> None:
 
     assert tickers == ["BRK-B", "MMM"]
     assert calls == [SP500_URL, SP500_URL]
-    assert sleeps == [2.0]
+    assert sleeps == [3.0]
+
+
+def test_pandas4_suppression_takes_precedence_over_yfinance_default() -> None:
+    """yfinance re-enables deprecations, so suppression must be restored later."""
+
+    from pandas.errors import Pandas4Warning
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("default", Pandas4Warning)
+        _suppress_pandas4_warnings()
+        assert warnings.filters[0][:3] == ("ignore", None, Pandas4Warning)
 
 
 def test_fetch_sp500_tickers_fails_after_bounded_attempts() -> None:

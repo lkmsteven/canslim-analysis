@@ -25,6 +25,26 @@ from canslim_analysis.paths import (
 from canslim_analysis.pipeline.config import PipelineConfig
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_local_editable_install_targets_this_project() -> None:
+    """The documented CLI must execute this project, not a stale local copy."""
+
+    editable_hook = (
+        PROJECT_ROOT
+        / ".venv"
+        / "Lib"
+        / "site-packages"
+        / "__editable__.canslim_analysis-2.1.0.pth"
+    )
+    if not editable_hook.is_file():
+        pytest.skip("project-local virtual environment is not present")
+
+    configured_source = Path(editable_hook.read_text(encoding="utf-8").strip())
+    assert configured_source.resolve() == (PROJECT_ROOT / "src").resolve()
+
+
 def test_pipeline_config_uses_current_analysis_defaults() -> None:
     """Defaults preserve the behavior of the original module constants."""
 
@@ -38,11 +58,11 @@ def test_pipeline_config_uses_current_analysis_defaults() -> None:
     assert config.min_institutional_ownership == 0.30
     assert config.market_lookback_days == 200
     assert config.min_history_days == 250
-    assert config.max_workers == 5
+    assert config.max_workers == 3
     assert config.universe_limit is None
     assert config.request_timeout == 10.0
-    assert config.max_retries == 3
-    assert config.retry_delay == 2.0
+    assert config.max_retries == 4
+    assert config.retry_delay == 3.0
 
 
 @pytest.mark.parametrize(

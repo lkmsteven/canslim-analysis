@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 from pathlib import Path
 from time import sleep
@@ -32,6 +33,8 @@ COMMANDS = (
     "status",
     "validate",
 )
+
+logger = logging.getLogger(__name__)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -127,11 +130,11 @@ def _config_from_arguments(arguments: argparse.Namespace) -> PipelineConfig:
         near_high_threshold=_option(arguments.near_high_threshold, 0.10),
         market_lookback_days=200,
         min_history_days=250,
-        max_workers=_option(arguments.workers, 5),
+        max_workers=_option(arguments.workers, 3),
         universe_limit=arguments.limit,
         request_timeout=_option(arguments.timeout, 10.0),
-        max_retries=_option(arguments.retries, 3),
-        retry_delay=_option(arguments.retry_delay, 2.0),
+        max_retries=_option(arguments.retries, 4),
+        retry_delay=_option(arguments.retry_delay, 3.0),
     )
 
 
@@ -317,27 +320,31 @@ def _run(arguments: argparse.Namespace, providers: QuantitativeProviders | None)
         output_dir=arguments.output_dir,
     )
     if result.stopped_for_findings:
-        print(
-            "Quantitative analysis complete; provide --findings or use "
-            "--unverified-fallback to continue qualitative enrichment."
-        )
+        if result.no_candidates:
+            print(
+                "Quantitative analysis produced no candidates; qualitative "
+                "enrichment stopped safely. Review thresholds/provider data, or "
+                "use --unverified-fallback only for an explicitly conservative "
+                "empty report."
+            )
+        else:
+            print(
+                "Quantitative analysis complete; provide --findings or use "
+                "--unverified-fallback to continue qualitative enrichment."
+            )
         return 0
     if result.used_unverified_fallback:
         print(
             "Warning: qualitative checks are unverified and were conservatively "
             "set to false."
         )
+    if result.no_candidates:
+        print(
+            "Note: the quantitative screen selected no candidates; the report "
+            "is intentionally empty."
+        )
     print(f"CANSLIM workflow complete: {result.pdf_path}")
     return 0
-
-    return QuantitativeProviders(
-        fetch_universe=lambda runtime_config: fetch_sp500_tickers(
-            runtime_config,
-            sleeper=sleep,
-        ),
-        fetch_market_history=fetch_market_history_yfinance,
-        fetch_stock=lambda ticker: fetch_stock_yfinance(ticker, config),
-    )
 
 
 def main(
@@ -357,6 +364,13 @@ def main(
     if parsed.command is None:
         parser.print_help()
         return 0
+
+    from canslim_analysis.logging_setup import configure_logging
+    from canslim_analysis.paths import LOG_ARTIFACT, resolve_artifact_path
+
+    configure_logging(
+        resolve_artifact_path(LOG_ARTIFACT, output_dir=parsed.output_dir)
+    )
 
     try:
         if parsed.command == "quantitative":
@@ -398,6 +412,7 @@ def main(
     except CanslimError as exc:
         return _fail(1, exc)
     except Exception as exc:
+        logger.exception("Unexpected CLI error")
         print(f"Unexpected internal error: {exc}", file=sys.stderr)
         return 1
 

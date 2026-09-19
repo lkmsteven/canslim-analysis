@@ -30,6 +30,7 @@ class WorkflowResult:
     pdf_path: Path | None
     stopped_for_findings: bool
     used_unverified_fallback: bool
+    no_candidates: bool = False
 
 
 def run_complete_workflow(
@@ -71,6 +72,19 @@ def run_complete_workflow(
             pdf_path=None,
             stopped_for_findings=True,
             used_unverified_fallback=False,
+            no_candidates=quantitative.passed_count == 0,
+        )
+
+    if quantitative.passed_count == 0 and not unverified_fallback:
+        return WorkflowResult(
+            quantitative=quantitative,
+            template_path=None,
+            enriched_path=None,
+            final_path=None,
+            pdf_path=None,
+            stopped_for_findings=True,
+            used_unverified_fallback=False,
+            no_candidates=True,
         )
 
     if findings_path is None:
@@ -110,4 +124,5 @@ def run_complete_workflow(
         pdf_path=pdf_path,
         stopped_for_findings=False,
         used_unverified_fallback=used_fallback,
+        no_candidates=quantitative.passed_count == 0,
     )

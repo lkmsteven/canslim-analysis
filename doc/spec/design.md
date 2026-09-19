@@ -24,6 +24,7 @@ Codex will operate the workflow through a local skill document and stable CLI co
 | RQ-012 | §3 module architecture and boundaries |
 | RQ-013 | §10 security and configuration design |
 | RQ-014 | §13 local setup and reproducibility |
+| RQ-015 | §5.2 orchestration flow; §5.3 status and state machine; §7.3 enrichment findings and merge rules |
 
 ## 3. Target Architecture
 
@@ -162,6 +163,8 @@ All commands will support `--help`. Commands that read or write pipeline artifac
 
 By default, `run --findings <file>` is the complete path. If `--findings` is omitted, the command will stop after quantitative analysis and instruct the user or agent to run `prepare-enrichment`, research the candidates, and provide findings. An explicit `--unverified-fallback` option may continue with every qualitative check set to false; its output will identify those checks as unverified. This prevents the CLI from silently presenting conservative fallback results as AI-verified analysis.
 
+If the quantitative stage selects zero candidates, supplied findings are stale by definition. The workflow will stop before enrichment and explain that candidates must be regenerated or thresholds reviewed. Explicit fallback may still create a conservative empty report; it will never copy prior qualitative conclusions.
+
 ### 5.3 Workflow state
 
 `status` will classify the artifact state as:
@@ -176,7 +179,7 @@ By default, `run --findings <file>` is the complete path. If `--findings` is omi
 | `report-complete` | Final JSON and PDF report exist. |
 | `invalid` | A file exists but fails validation. |
 
-The human-readable status will include the next valid command. A `--json` option will emit machine-readable state for deterministic agent use.
+Downstream artifacts are current only when they are no older than their immediate predecessor: enriched follows quantitative, final follows enriched, and the dated PDF follows final. The human-readable status will include the next valid command. A `--json` option will emit machine-readable state for deterministic agent use.
 
 ## 6. Artifact and Path Strategy
 
@@ -252,6 +255,7 @@ The findings input will contain a `Findings` array. `enrich` will enforce:
 - A true finding has a non-empty corresponding evidence or rationale string.
 - A false finding may have an explanatory reason, but the CLI will not fabricate one.
 - Unknown tickers and unknown fields are rejected.
+- If there are no candidates, only an empty findings array is accepted; a non-empty array produces an explicit stale-findings error.
 
 Successful merge will preserve all quantitative fields and replace only the six qualitative fields represented by the template.
 
@@ -272,10 +276,10 @@ CLI defaults will preserve current behavior:
 | Positive volume-skew ratio | `1.2` |
 | Reference institutional ownership | `0.30` |
 | Near-high threshold | `0.10` |
-| Worker count | `5` |
+| Worker count | `3` |
 | Request timeout | `10` seconds |
-| Retry count | `3` |
-| Retry delay | `2` seconds |
+| Retry count | `4` |
+| Retry delay | `3` seconds |
 | Universe limit | unlimited, with an optional CLI limit |
 
 The CLI will expose operationally useful options rather than requiring source edits. The first implementation will expose universe limit, worker count, timeout, retry count, output directory, and principal quantitative thresholds.
@@ -289,6 +293,8 @@ External access will be isolated behind small, injectable functions or classes:
 - Stock-data provider: returns fundamentals and price history for one ticker.
 
 CLI composition will install Yahoo Finance and Wikipedia-backed implementations. Tests will install in-memory or file-backed fakes. This avoids live network access in unit tests and allows malformed, partial, timeout, and empty external responses to be tested deterministically.
+
+Yahoo Finance 0.2.66 changes Python warning-filter precedence during import and still emits Pandas 4 deprecations. Provider functions restore the Pandas4 ignore filter immediately after that import so operational output remains readable.
 
 No new category of runtime dependency is required. Direct runtime dependencies are `requests` for HTTP retrieval, `yfinance` for market data (which supplies pandas transitively), and `reportlab` for PDF rendering. They are pinned to versions verified by local setup. The former direct `lxml` and `tqdm` dependencies are removed because the new HTML parser and orchestration do not use them. `pytest` remains a development-only test dependency.
 
@@ -307,11 +313,11 @@ No new category of runtime dependency is required. Direct runtime dependencies a
 
 ### 9.2 CLI behavior
 
-Expected errors will produce one clear stderr message and a documented exit code. Unexpected errors will log the stack trace when `--debug` is enabled and otherwise report that an unexpected failure occurred.
+Expected errors will produce one clear stderr message and a documented exit code. Unexpected errors will write the traceback through the module logger to the configured runtime log and report one clear stderr message.
 
 | Exit code | Meaning |
 |---|---|
-| `0` | Success. |
+| `0` | Success or an intentional findings/no-candidate stop. |
 | `1` | Unexpected internal error. |
 | `2` | CLI usage error. |
 | `3` | Schema or validation failure. |

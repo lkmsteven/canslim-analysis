@@ -7,6 +7,7 @@ from collections.abc import Callable
 from html.parser import HTMLParser
 from time import sleep
 from typing import Any
+import warnings
 
 from canslim_analysis.pipeline.quantitative import (
     PriceBar,
@@ -30,17 +31,26 @@ UniverseFetcher = Callable[[str, dict[str, str], float], str]
 SleepFunction = Callable[[float], None]
 
 
+def _suppress_pandas4_warnings() -> None:
+    """Restore Pandas4 suppression after yfinance changes default filters."""
+
+    try:
+        from pandas.errors import Pandas4Warning
+    except ImportError:
+        return
+    warnings.filterwarnings("ignore", category=Pandas4Warning)
+
+
 class _SymbolTableParser(HTMLParser):
-    """Collect row cells from the first HTML table in a document."""
+    """Collect rows from each top-level HTML table in a document."""
 
     def __init__(self) -> None:
         """Initialize an empty table representation."""
 
         super().__init__(convert_charrefs=True)
-        self.rows: list[list[str]] = []
-        self._in_row = False
+        self.tables: list[list[list[str]]] = []
+        self._table_stack: list[list[list[str]]] = []
         self._in_cell = False
-        self._row: list[str] = []
         self._cell: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
@@ -52,10 +62,11 @@ class _SymbolTableParser(HTMLParser):
         """
 
         del attrs
-        if tag == "tr":
-            self._in_row = True
-            self._row = []
-        elif tag in {"td", "th"} and self._in_row:
+        if tag == "table":
+            self._table_stack.append([])
+        elif tag == "tr" and self._table_stack:
+            self._table_stack[-1].append([])
+        elif tag in {"td", "th"} and self._table_stack and self._table_stack[-1]:
             self._in_cell = True
             self._cell = []
 
@@ -77,13 +88,10 @@ class _SymbolTableParser(HTMLParser):
         """
 
         if tag in {"td", "th"} and self._in_cell:
-            self._row.append("".join(self._cell).strip())
+            self._table_stack[-1][-1].append("".join(self._cell).strip())
             self._in_cell = False
-        elif tag == "tr" and self._in_row:
-            if self._row:
-                self.rows.append(self._row)
-            self._in_row = False
-            self._in_cell = False
+        elif tag == "table" and self._table_stack:
+            self.tables.append(self._table_stack.pop())
 
 
 def _fetch_over_http(url: str, headers: dict[str, str], timeout: float) -> str:
@@ -124,29 +132,32 @@ def parse_sp500_symbols(html: str) -> list[str]:
     parser = _SymbolTableParser()
     parser.feed(html)
 
-    symbol_index: int | None = None
-    symbol_row_index: int | None = None
-    for row_index, row in enumerate(parser.rows):
-        for index, cell in enumerate(row):
-            if cell.strip().casefold() == "symbol":
-                symbol_index = index
-                symbol_row_index = row_index
+    for table_rows in parser.tables:
+        symbol_index: int | None = None
+        symbol_row_index: int | None = None
+        for row_index, row in enumerate(table_rows):
+            for index, cell in enumerate(row):
+                if cell.strip().casefold() == "symbol":
+                    symbol_index = index
+                    symbol_row_index = row_index
+                    break
+            if symbol_index is not None:
                 break
-        if symbol_index is not None:
-            break
 
-    if symbol_index is None:
-        raise SchemaValidationError("HTML table does not contain a Symbol column")
+        if symbol_index is None:
+            continue
 
-    tickers = [
-        row[symbol_index].strip().replace(".", "-")
-        for row_index, row in enumerate(parser.rows)
-        if row_index != symbol_row_index
-        if len(row) > symbol_index and row[symbol_index].strip()
-    ]
-    if not tickers:
-        raise SchemaValidationError("No ticker symbols were found in the HTML table")
-    return tickers
+        tickers = [
+            row[symbol_index].strip().replace(".", "-")
+            for row_index, row in enumerate(table_rows)
+            if row_index != symbol_row_index
+            if len(row) > symbol_index and row[symbol_index].strip()
+        ]
+        if not tickers:
+            raise SchemaValidationError("No ticker symbols were found in the HTML table")
+        return tickers
+
+    raise SchemaValidationError("HTML table does not contain a Symbol column")
 
 
 def fetch_sp500_tickers(
@@ -236,6 +247,7 @@ def fetch_market_history_yfinance(index_name: str) -> list[float] | None:
 
     import yfinance as yf
 
+    _suppress_pandas4_warnings()
     from canslim_analysis.pipeline.quantitative import MARKET_INDEXES
 
     ticker = MARKET_INDEXES.get(index_name, index_name)
@@ -268,6 +280,7 @@ def fetch_stock_yfinance(
         try:
             import yfinance as yf
 
+            _suppress_pandas4_warnings()
             stock = yf.Ticker(ticker)
             info = stock.info or {}
             frame = stock.history(period="1y", auto_adjust=False)

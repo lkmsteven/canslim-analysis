@@ -21,6 +21,18 @@ The Codex-agent refactor is complete on this revision. The former standalone scr
 | Codex skill contract | Present and documentation-tested |
 | Qualitative safety | Verified findings required; fallback is explicit |
 
+## Verified on 2026-09-20
+
+| Check | Result |
+|---|---|
+| Bounded live quantitative smoke | Five-stock run completed and exposed the zero-candidate merge path |
+| Stale editable installation | Repaired to resolve this project's `src/` tree |
+| Full test suite | 150 passed |
+| Zero-candidate workflow | Supplied findings stop safely; explicit fallback creates a conservative empty report |
+| Workflow freshness | Enrichment-to-final staleness is detected |
+| Runtime logging | Dispatched commands write the selected output-directory log |
+| Provider warning noise | Live retry emits operational logs without Pandas4 warnings |
+
 ## Dependency Pins
 
 Direct runtime dependencies are pinned to locally verified versions:

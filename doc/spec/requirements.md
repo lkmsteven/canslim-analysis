@@ -202,6 +202,19 @@ The project SHALL document a reproducible local environment setup suitable for C
 - Python version expectations are explicit.
 - Setup does not require undocumented global changes.
 
+### RQ-015 — Zero-candidate qualitative guard
+
+**Priority:** MUST
+
+The workflow SHALL prevent qualitative findings from one quantitative run from being merged into a different run that selected no candidates.
+
+**Acceptance criteria:**
+
+- A quantitative artifact with an empty `Stocks` array remains valid and can produce an empty enrichment worksheet.
+- `run` with supplied non-empty findings and zero candidates stops before enrichment and gives actionable guidance without treating old findings as verified.
+- `run --unverified-fallback` may continue with zero candidates only because all qualitative values remain explicitly conservative false values.
+- Runtime logging is written to the selected output directory and the local editable installation resolves to this project's source tree.
+
 ## 5. Constraints
 
 - Work must remain inside `Projects/canslim-analysis`.

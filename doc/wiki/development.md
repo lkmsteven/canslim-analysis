@@ -66,4 +66,4 @@ pytest tests/test_enrichment_merge.py -q
 
 Use `python -m canslim_analysis status --json` to locate the last valid artifact.
 
-Gap: [design §9](../spec/design.md) describes a `--debug` option, but the parser does not implement it. `logging_setup.configure_logging` is implemented and unit-tested, but no CLI dispatch path calls it, so a file log is not guaranteed.
+Dispatched CLI commands call `logging_setup.configure_logging` and write `canslim_analysis.log` to the selected output directory. Unexpected exceptions also write a traceback to that log while the terminal keeps its stable one-line failure message.

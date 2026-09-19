@@ -43,15 +43,13 @@ Preserve completed findings outside `out/` if they have evidentiary value; they 
 
 ## Logs
 
-Modules use standard Python logging. CLI output goes to stdout/stderr as captured by the invoking shell.
-
-Gap: `logging_setup.configure_logging` can create console/file handlers, but no CLI dispatch path calls it. Therefore operators must not assume `out/canslim_analysis.log` was produced by the current implementation.
+Dispatched CLI commands install console and file logging through `logging_setup.configure_logging`. The file is `canslim_analysis.log` inside the selected output directory.
 
 ## Failure classification
 
 | Exit code | Classification | Operator response |
 |---|---|---|
-| 0 | Success or intentional findings stop | Continue the displayed workflow. |
+| 0 | Success or an intentional findings/no-candidate stop | Continue the displayed workflow. |
 | 1 | Unexpected internal error | Capture stderr, run status/tests, do not edit generated JSON. |
 | 2 | Usage/configuration error | Correct options and values. |
 | 3 | Schema/validation failure | Validate and recreate the artifact through its producing stage. |

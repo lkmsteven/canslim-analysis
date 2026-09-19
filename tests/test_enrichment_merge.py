@@ -95,6 +95,21 @@ def test_merge_rejects_unknown_ticker() -> None:
         raise AssertionError("unknown ticker was accepted")
 
 
+def test_merge_names_empty_candidate_mismatch() -> None:
+    """A zero-candidate quantitative run cannot consume prior findings."""
+
+    empty_quantitative = {"Metadata": {"Schema_Version": "2.1"}, "Stocks": []}
+    try:
+        merge_enrichment(
+            empty_quantitative,
+            findings_data(finding("STALE")),
+        )
+    except Exception as exc:
+        assert "no candidates" in str(exc).lower()
+    else:
+        raise AssertionError("findings were accepted for an empty candidate set")
+
+
 def test_merge_rejects_duplicate_and_missing_findings() -> None:
     """One-to-one candidate coverage is mandatory."""
 

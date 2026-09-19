@@ -7,6 +7,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+import canslim_analysis.cli as cli_module
+from canslim_analysis.cli import main
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_COMMANDS = (
@@ -65,3 +69,36 @@ def test_package_cli_rejects_unknown_command() -> None:
 
     assert result.returncode == 2
     assert "invalid choice" in result.stderr
+
+
+def test_cli_dispatch_writes_documented_runtime_log(tmp_path: Path) -> None:
+    """Every dispatched command installs logging at its selected output path."""
+
+    output_dir = tmp_path / "out"
+    exit_code = main(["status", "--json", "--output-dir", str(output_dir)])
+
+    assert exit_code == 0
+    assert (output_dir / "canslim_analysis.log").is_file()
+
+
+def test_unexpected_error_writes_traceback_to_runtime_log(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unexpected failures remain diagnosable without losing the stable code."""
+
+    def raise_unexpected(*_args: object, **_kwargs: object) -> int:
+        raise RuntimeError("hidden diagnostic")
+
+    monkeypatch.setattr(cli_module, "run_quantitative_analysis", raise_unexpected)
+    output_dir = tmp_path / "out"
+
+    exit_code = main(
+        ["quantitative", "--output-dir", str(output_dir)],
+        providers=object(),
+    )
+
+    log_text = (output_dir / "canslim_analysis.log").read_text(encoding="utf-8")
+    assert exit_code == 1
+    assert "hidden diagnostic" in log_text
+    assert "Traceback" in log_text

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import time
 from pathlib import Path
 
 import pytest
@@ -147,3 +149,71 @@ def test_cli_validate_missing_artifact_returns_stable_code(tmp_path: Path) -> No
     )
 
     assert exit_code == 4
+
+
+def test_fresh_quantitative_run_makes_old_downstream_artifacts_stale(
+    tmp_path: Path,
+) -> None:
+    """Refreshing a predecessor regresses status until downstream is rebuilt."""
+
+    intermediate = write_json(
+        tmp_path / "intermediate_canslim.json",
+        intermediate_data(),
+    )
+    enriched_path = tmp_path / "enriched_canslim.json"
+    enriched_path.write_text(
+        json.dumps({"Metadata": {}, "Stocks": []}),
+        encoding="utf-8",
+    )
+    final_path = tmp_path / "final_canslim_report.json"
+    final_path.write_text(
+        json.dumps(
+            {
+                "Schema_Version": "2.1",
+                "Market_Environment": "Confirmed Uptrend",
+                "Top_Candidates": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "canslim_report_2026-09-13.pdf").write_bytes(b"%PDF-1.7\n")
+
+    stale_time = time.time() - 3600
+    now = time.time()
+    os.utime(enriched_path, (stale_time, stale_time))
+    os.utime(final_path, (stale_time, stale_time))
+    os.utime(intermediate, (now, now))
+
+    assert classify_workflow_state(tmp_path) == "quantitative-complete"
+
+
+def test_fresh_enrichment_makes_old_final_report_stale(tmp_path: Path) -> None:
+    """Final reports are compared with their immediate enriched predecessor."""
+
+    intermediate_path = write_json(
+        tmp_path / "intermediate_canslim.json",
+        intermediate_data(),
+    )
+    enriched_path = tmp_path / "enriched_canslim.json"
+    enriched_path.write_text(
+        json.dumps({"Metadata": {}, "Stocks": []}),
+        encoding="utf-8",
+    )
+    final_path = tmp_path / "final_canslim_report.json"
+    final_path.write_text(
+        json.dumps(
+            {
+                "Schema_Version": "2.1",
+                "Market_Environment": "Confirmed Uptrend",
+                "Top_Candidates": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    now = time.time()
+    os.utime(intermediate_path, (now - 7200, now - 7200))
+    os.utime(enriched_path, (now - 3600, now - 3600))
+    os.utime(final_path, (now - 5400, now - 5400))
+
+    assert classify_workflow_state(tmp_path) == "enrichment-complete"

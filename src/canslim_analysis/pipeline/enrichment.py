@@ -163,6 +163,13 @@ def merge_enrichment(
 
     stocks = validate_quantitative_input(quantitative_data)
     candidate_tickers = {stock["Ticker"] for stock in stocks}
+    findings = findings_data.get("Findings", []) if isinstance(findings_data, dict) else []
+    if not candidate_tickers and findings:
+        raise SchemaValidationError(
+            "Quantitative input contains no candidates; do not merge findings "
+            "from a previous run. Review quantitative thresholds or rerun "
+            "prepare-enrichment after candidates are available."
+        )
     findings = validate_findings(findings_data, candidate_tickers)
     enriched = copy.deepcopy(quantitative_data)
     for stock in enriched["Stocks"]:

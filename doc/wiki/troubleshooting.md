@@ -104,28 +104,38 @@ Run the applicable stage validator above. Replace the file only by rerunning its
 
 ### Likely cause
 
-Verified causes include duplicate/missing ticker coverage, unknown ticker/field, non-boolean value, or a true claim without evidence.
+Verified causes include duplicate/missing ticker coverage, unknown ticker/field, non-boolean value, a true claim without evidence, or non-empty findings against a zero-candidate quantitative run.
 
 ### Action
 
 Start from a freshly generated template and change only the documented finding fields. Keep false claims when evidence is absent or ambiguous.
 
+## Quantitative run produced no candidates
+
+### Likely cause
+
+The strict CANSLIM gates can legitimately select no stocks, or an unusual data day can leave all evaluated candidates below a threshold. Existing findings are therefore stale and are never merged.
+
+### Action
+
+Review the quantitative metadata and thresholds. If a conservative empty report is explicitly acceptable, rerun with `--unverified-fallback`; disclose that it contains no candidates and all qualitative checks are false.
+
 ## `run` stops after quantitative analysis
 
 ### Likely cause
 
-Verified: no `--findings` path and no explicit fallback were supplied.
+Verified: no `--findings` path and no explicit fallback were supplied, or the current quantitative run selected no candidates.
 
 ### Action
 
-Research the generated candidates, then run with `--findings`. Use `--unverified-fallback` only when conservative all-false qualitative results are explicitly acceptable, and disclose that limitation.
+Research generated candidates when present, then run with `--findings`. Use `--unverified-fallback` only when conservative all-false qualitative results are explicitly acceptable, and disclose that limitation.
 
 ## No file log exists
 
 ### Likely cause
 
-Gap: `logging_setup.configure_logging` exists, but the CLI does not call it.
+The command did not dispatch (for example, help-only), or the selected output directory differs from the expected directory.
 
 ### Action
 
-Capture terminal stdout/stderr instead of expecting `out/canslim_analysis.log`. Adding CLI logging integration is a code change, not a supported runtime option.
+Run a dispatched command with the intended `--output-dir`, then inspect `canslim_analysis.log` in that directory. Capture terminal output for help-only invocations.

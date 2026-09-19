@@ -85,19 +85,32 @@ def _is_valid(path: Path, stage: str) -> bool:
     return True
 
 
+def _is_current(path: Path, stage: str, *, source: Path | None = None) -> bool:
+    """Return whether an artifact is valid and not older than its source."""
+
+    if not path.is_file() or not _is_valid(path, stage):
+        return False
+    if source is not None and path.stat().st_mtime < source.stat().st_mtime:
+        return False
+    return True
+
+
 def classify_workflow_state(
     output_dir: Path | str,
     *,
     project_root: Path | str | None = None,
 ) -> str:
-    """Classify pipeline progress from validated artifacts.
+    """Classify pipeline progress from current, validated artifacts.
 
     Args:
         output_dir: Output directory containing generated artifacts.
         project_root: Unused root kept for path-resolution symmetry.
 
     Returns:
-        One of the documented workflow states.
+        One of the documented workflow states. Artifacts older than their
+        required predecessor are stale and do not advance the state; for
+        example, a fresh quantitative rerun correctly returns the workflow to
+        ``quantitative-complete`` until downstream stages are regenerated.
     """
 
     del project_root
@@ -111,17 +124,20 @@ def classify_workflow_state(
         return "not-started"
     if not _is_valid(intermediate, "quantitative"):
         return "invalid"
-    if enriched.exists() and not _is_valid(enriched, "enriched"):
-        return "invalid"
-    if final.exists() and not _is_valid(final, "final"):
-        return "invalid"
-    if enriched.exists():
-        if final.exists():
-            if any(directory.glob("canslim_report_*.pdf")):
+    enriched_is_current = _is_current(enriched, "enriched", source=intermediate)
+    final_is_current = _is_current(final, "final", source=enriched)
+
+    if enriched_is_current:
+        if final_is_current:
+            report_newer = any(
+                report.stat().st_mtime >= final.stat().st_mtime
+                for report in directory.glob("canslim_report_*.pdf")
+            )
+            if report_newer:
                 return "report-complete"
             return "final-complete"
         return "enrichment-complete"
-    if template.exists():
+    if template.is_file() and template.stat().st_mtime >= intermediate.stat().st_mtime:
         return "enrichment-ready"
     return "quantitative-complete"
 

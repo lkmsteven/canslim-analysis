@@ -17,7 +17,7 @@
 | `SKILL.md` | Existing documentation / agent contract | Codex discovery, operating workflow, safety and response contracts. | Included |
 | `pyproject.toml` | Build and dependencies | Python 3.12+, package metadata, pinned runtime dependencies, pytest configuration. | Included |
 | `out/.gitkeep` | Repository placeholder | Keeps the output directory represented without generated content. | Included |
-| `doc/spec/requirements.md` | Specification | Normative requirements RQ-001 through RQ-014. | Included |
+| `doc/spec/requirements.md` | Specification | Normative requirements RQ-001 through RQ-015. | Included |
 | `doc/spec/design.md` | Specification | Architecture, contracts, alternatives, migration design. | Included |
 | `doc/spec/tasks.md` | Specification / progress | T-001 through T-017, dependencies, acceptance tests, completion state. | Included |
 | `doc/wiki/API-Reference.md` | Existing wiki | CLI, artifact, and scoring contract summary. | Included; reconciled |
@@ -40,7 +40,7 @@
 | `src/canslim_analysis/pipeline/__init__.py` | Source | Pipeline package marker. | Included |
 | `src/canslim_analysis/pipeline/config.py` | Source | Frozen configuration and boundary validation. | Included |
 | `src/canslim_analysis/pipeline/enrichment.py` | Source | Quantitative input checks, findings validation, merge, persistence. | Included |
-| `src/canslim_analysis/pipeline/market_data.py` | Source | S&P 500 parsing and Yahoo providers. | Included |
+| `src/canslim_analysis/pipeline/market_data.py` | Source | S&P 500 parsing, Yahoo providers, and Pandas4 suppression. | Included |
 | `src/canslim_analysis/pipeline/quantitative.py` | Source | Market direction, transformations, ranking, quantitative run. | Included |
 | `src/canslim_analysis/pipeline/reporting.py` | Source | Final-report assembly and persistence. | Included |
 | `src/canslim_analysis/pipeline/scoring.py` | Source | Dataset validation, normalization, scoring, grades. | Included |
@@ -49,12 +49,12 @@
 | `src/canslim_analysis/reporting/__init__.py` | Source | Reporting package marker. | Included |
 | `src/canslim_analysis/reporting/pdf.py` | Source | Final-report PDF renderer. | Included |
 | `tests/test_cleanup.py` | Tests | Legacy interface removal and no source writes to `Scripts/`. | Included |
-| `tests/test_cli.py` | Tests | Top-level help, no-command help, unknown command. | Included |
+| `tests/test_cli.py` | Tests | Top-level help, no-command help, unknown command, runtime logging, and tracebacks. | Included |
 | `tests/test_documentation.py` | Tests | Mandatory specs/wiki paths and current README/wiki contracts. | Included |
 | `tests/test_enrichment.py` | Tests | Template coverage, determinism, invalid input, CLI missing input. | Included |
 | `tests/test_enrichment_merge.py` | Tests | Exact findings shape, evidence, one-to-one merge, CLI success. | Included |
 | `tests/test_final_reporting.py` | Tests | Final ranking, distribution, nullable metrics, CLI errors. | Included |
-| `tests/test_infrastructure.py` | Tests | Config defaults/bounds, errors, paths, logging helper. | Included |
+| `tests/test_infrastructure.py` | Tests | Config defaults/bounds, errors, paths, logging helper, and editable-install source. | Included |
 | `tests/test_market_data.py` | Tests | HTML parsing, retry, bounded failure, custom universe URL. | Included |
 | `tests/test_market_direction.py` | Tests | Uptrend, under pressure, downtrend, malformed/short history. | Included |
 | `tests/test_pdf_reporting.py` | Tests | PDF command, naming, signature, missing/malformed input. | Included |

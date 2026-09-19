@@ -38,11 +38,11 @@ class PipelineConfig:
     near_high_threshold: float = 0.10
     market_lookback_days: int = 200
     min_history_days: int = 250
-    max_workers: int = 5
+    max_workers: int = 3
     universe_limit: int | None = None
     request_timeout: float = 10.0
-    max_retries: int = 3
-    retry_delay: float = 2.0
+    max_retries: int = 4
+    retry_delay: float = 3.0
     output_dir: Path | None = None
 
     def __post_init__(self) -> None:

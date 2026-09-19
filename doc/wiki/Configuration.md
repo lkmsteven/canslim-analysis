@@ -12,10 +12,10 @@ Run `python -m canslim_analysis quantitative --help` for the current list. Impor
 | Positive volume skew | `1.2` |
 | Institutional ownership reference | `0.30` |
 | Near-high threshold | `0.10` |
-| Workers | `5` |
+| Workers | `3` |
 | Request timeout | `10` seconds |
-| Retries | `3` |
-| Retry delay | `2` seconds |
+| Retries | `4` |
+| Retry delay | `3` seconds |
 
 The output directory defaults to `out/` and can be overridden with `--output-dir`. No workflow requires editing generated JSON.
 

@@ -77,6 +77,8 @@ python -m canslim_analysis run --findings <findings.json>
 
 Without findings, `run` stops after quantitative screening. `--unverified-fallback` is opt-in, sets all qualitative checks to false, and must be disclosed as unverified.
 
+If the current quantitative run selects zero candidates, `run --findings` stops safely instead of merging findings from an older run. `--unverified-fallback` may still produce an explicitly conservative, empty report.
+
 ## Artifacts
 
 | Artifact | Default path |

@@ -49,6 +49,8 @@ This workflow is agent-neutral. Never edit generated JSON only to make a stage p
    python -m canslim_analysis enrich --findings <findings.json>
    ```
 
+   If the quantitative metadata shows `Stocks_Passed_To_AI: 0`, do not submit findings from a previous run. Either review the quantitative result or obtain explicit approval for `run --unverified-fallback`, which produces a conservative empty report.
+
 7. Generate final JSON:
 
    ```text

@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from canslim_analysis.cli import build_parser, main
 from tests.test_quantitative_cli import market_history, stock_row
 
@@ -109,6 +111,68 @@ def test_run_without_findings_stops_after_quantitative(tmp_path: Path) -> None:
     assert (output_dir / "intermediate_canslim.json").is_file()
     assert not (output_dir / "enriched_canslim.json").exists()
     assert not (output_dir / "final_canslim_report.json").exists()
+
+
+def test_zero_candidates_with_findings_stop_before_stale_merge(
+    tmp_path: Path,
+) -> None:
+    """Prior findings are rejected safely when a new screen has no candidates."""
+
+    output_dir = tmp_path / "out"
+    findings_path = findings(tmp_path / "findings.json")
+    exit_code = main(
+        base_arguments(output_dir)
+        + [
+            "--min-eps-growth",
+            "1.0",
+            "--min-annual-eps-growth",
+            "1.0",
+            "--findings",
+            str(findings_path),
+        ],
+        providers=providers(),
+    )
+
+    assert exit_code == 0
+    intermediate = json.loads(
+        (output_dir / "intermediate_canslim.json").read_text(encoding="utf-8")
+    )
+    assert intermediate["Metadata"]["Stocks_Passed_To_AI"] == 0
+    assert not (output_dir / "enriched_canslim.json").exists()
+    assert not (output_dir / "final_canslim_report.json").exists()
+    assert not list(output_dir.glob("canslim_report_*.pdf"))
+
+
+def test_zero_candidates_with_fallback_produces_empty_report(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Explicit fallback remains useful when no candidates were selected."""
+
+    output_dir = tmp_path / "out"
+    exit_code = main(
+        base_arguments(output_dir)
+        + [
+            "--min-eps-growth",
+            "1.0",
+            "--min-annual-eps-growth",
+            "1.0",
+            "--unverified-fallback",
+        ],
+        providers=providers(),
+    )
+
+    assert exit_code == 0
+    assert "no candidates" in capsys.readouterr().out.lower()
+    enriched = json.loads(
+        (output_dir / "enriched_canslim.json").read_text(encoding="utf-8")
+    )
+    assert enriched["Stocks"] == []
+    final = json.loads(
+        (output_dir / "final_canslim_report.json").read_text(encoding="utf-8")
+    )
+    assert final["Total_Candidates_Evaluated"] == 0
+    assert list(output_dir.glob("canslim_report_*.pdf"))
 
 
 def test_explicit_unverified_fallback_continues_with_false_checks(

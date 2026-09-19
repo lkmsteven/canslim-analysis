@@ -159,6 +159,15 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 - **Scope:** Run final offline verification, review requirements-to-task coverage, inspect generated artifacts and documentation, update task statuses, and record delivery results.
 - **Acceptance test:** From a clean tracked workspace, documented dependency setup succeeds, `pytest` passes, `python -m canslim_analysis --help` succeeds, `status` handles an empty output directory, no OpenClaw-required workflow remains, and specifications/wiki reflect delivered behavior.
 
+### T-018 Repair zero-candidate qualitative execution
+
+- **Status:** `done`
+- **Depends on:** T-017
+- **Requirements:** RQ-003, RQ-006, RQ-011, RQ-014, RQ-015
+- **Design sections:** §5.2 Orchestration Flow, §5.3 Workflow State, §7.3 Enrichment Findings Template, §8.1 Configuration Object
+- **Scope:** Reject stale findings after a zero-candidate quantitative run, allow only explicit fallback to produce a conservative empty report, compare every downstream artifact to its immediate predecessor, activate output-directory logging, suppress provider deprecation noise, and ensure the local editable install resolves to this project.
+- **Acceptance test:** Offline workflow tests cover zero candidates with findings and fallback, the enrichment validator reports a zero-candidate mismatch, status detects a stale final report after enriched regeneration, CLI logging and traceback capture are installed, Pandas4 suppression has filter precedence, and the editable-hook source is this project. Full suite passes.
+
 ## Dependency Overview
 
 ```text
@@ -179,6 +188,7 @@ T-001
     │              │                   └── T-015
     │              │                       └── T-016
     │              │                           └── T-017
+    │              │                               └── T-018
 ```
 
 ## Coverage Check
@@ -199,3 +209,4 @@ T-001
 | RQ-012 | T-001, T-002, T-003, T-004, T-005, T-016, T-017 |
 | RQ-013 | T-002, T-017 |
 | RQ-014 | T-001, T-015, T-017 |
+| RQ-015 | T-018 |

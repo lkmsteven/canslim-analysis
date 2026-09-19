@@ -22,3 +22,5 @@ python -m canslim_analysis enrich --findings <findings.json>
 Findings must map one-to-one to candidates. Unknown fields and tickers are rejected. Boolean fields must be real booleans. A true `N_New_Catalyst`, `S_Float_Tightness`, or `I_Institutional_Quality` requires non-empty evidence in the matching details field.
 
 Missing, stale, ambiguous, or contradictory evidence remains false. Never fabricate qualitative confirmation.
+
+If the current quantitative artifact contains no candidates, enrichment accepts only an empty findings array. `run` stops before merge when supplied findings are non-empty; explicit fallback can produce an empty, all-false, unverified report.
