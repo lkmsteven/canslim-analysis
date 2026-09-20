@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from math import isfinite
+from time import sleep
 from typing import Any
 
 from canslim_analysis.errors import ExternalDataError, SchemaValidationError
@@ -644,17 +645,36 @@ def run_quantitative_analysis(
     market_direction = assess_market_direction(market_history, config)
 
     fetched_rows: list[dict[str, Any]] = []
+    failed_tickers: list[str] = []
     failed_fetches = 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=config.max_workers) as executor:
         results = executor.map(
             lambda ticker: _fetch_one_stock(ticker, providers, config),
             tickers,
         )
-        for result in results:
+        for ticker, result in zip(tickers, results, strict=True):
             if result is None:
+                failed_tickers.append(ticker)
                 failed_fetches += 1
             else:
                 fetched_rows.append(result)
+
+    # A short recovery pass handles a partial Yahoo rate-limit wave without
+    # turning a transient response into a permanently missing candidate.
+    if failed_tickers and len(failed_tickers) < len(tickers):
+        cooldown = config.retry_delay * 2
+        logger.warning(
+            "Retrying %s rate-limited or transient stock fetches after %ss",
+            len(failed_tickers),
+            cooldown,
+        )
+        sleep(cooldown)
+        for ticker in failed_tickers:
+            recovered = _fetch_one_stock(ticker, providers, config)
+            if recovered is None:
+                continue
+            failed_fetches -= 1
+            fetched_rows.append(recovered)
 
     if not fetched_rows:
         raise ExternalDataError("No stock data could be evaluated")

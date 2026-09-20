@@ -168,6 +168,15 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 - **Scope:** Reject stale findings after a zero-candidate quantitative run, allow only explicit fallback to produce a conservative empty report, compare every downstream artifact to its immediate predecessor, activate output-directory logging, suppress provider deprecation noise, and ensure the local editable install resolves to this project.
 - **Acceptance test:** Offline workflow tests cover zero candidates with findings and fallback, the enrichment validator reports a zero-candidate mismatch, status detects a stale final report after enriched regeneration, CLI logging and traceback capture are installed, Pandas4 suppression has filter precedence, and the editable-hook source is this project. Full suite passes.
 
+### T-019 Add partial rate-limit recovery
+
+- **Status:** `done`
+- **Depends on:** T-018
+- **Requirements:** RQ-003, RQ-010, RQ-011
+- **Design sections:** §5.2 Orchestration Flow, §8.2 Provider Isolation
+- **Scope:** After a live run encounters partial stock-fetch failures, wait once for the provider rate-limit window and retry only failed tickers. Preserve immediate failure for complete provider outages. Keep tests isolated from the default `out/` directory and all generated `out/` artifacts out of Git except the directory placeholder.
+- **Acceptance test:** Offline orchestration tests prove a failed ticker is retried after the cooldown and recovered, a total outage performs no cooldown retry, the universe-limit CLI test writes only to its temporary directory, and Git ignores generated workflow artifacts while retaining `out/.gitkeep`. Full suite passes.
+
 ## Dependency Overview
 
 ```text
@@ -189,6 +198,7 @@ T-001
     │              │                       └── T-016
     │              │                           └── T-017
     │              │                               └── T-018
+    │              │                                   └── T-019
 ```
 
 ## Coverage Check
@@ -205,7 +215,7 @@ T-001
 | RQ-008 | T-015, T-016, T-017 |
 | RQ-009 | T-001, T-017 |
 | RQ-010 | T-001, T-003, T-004, T-005, T-009 |
-| RQ-011 | T-002, T-003, T-005, T-006 |
+| RQ-011 | T-002, T-003, T-005, T-006, T-018, T-019 |
 | RQ-012 | T-001, T-002, T-003, T-004, T-005, T-016, T-017 |
 | RQ-013 | T-002, T-017 |
 | RQ-014 | T-001, T-015, T-017 |

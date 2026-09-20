@@ -41,7 +41,7 @@
 | `src/canslim_analysis/pipeline/config.py` | Source | Frozen configuration and boundary validation. | Included |
 | `src/canslim_analysis/pipeline/enrichment.py` | Source | Quantitative input checks, findings validation, merge, persistence. | Included |
 | `src/canslim_analysis/pipeline/market_data.py` | Source | S&P 500 parsing, Yahoo providers, and Pandas4 suppression. | Included |
-| `src/canslim_analysis/pipeline/quantitative.py` | Source | Market direction, transformations, ranking, quantitative run. | Included |
+| `src/canslim_analysis/pipeline/quantitative.py` | Source | Market direction, transformations, ranking, quantitative run, partial-fetch recovery. | Included |
 | `src/canslim_analysis/pipeline/reporting.py` | Source | Final-report assembly and persistence. | Included |
 | `src/canslim_analysis/pipeline/scoring.py` | Source | Dataset validation, normalization, scoring, grades. | Included |
 | `src/canslim_analysis/pipeline/status.py` | Source | Artifact validation and workflow state. | Included |

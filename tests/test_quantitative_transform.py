@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
+from canslim_analysis.errors import ExternalDataError
 from canslim_analysis.pipeline.config import PipelineConfig
 from canslim_analysis.pipeline.quantitative import (
     PriceBar,
+    QuantitativeProviders,
     analyze_institutional_ownership,
     analyze_new_highs,
     analyze_supply_demand,
@@ -17,6 +22,7 @@ from canslim_analysis.pipeline.quantitative import (
     pct_text,
     rank_percentiles,
     safe_float,
+    run_quantitative_analysis,
     select_quantitative_candidates,
 )
 
@@ -28,6 +34,87 @@ def bar(open_price: float, close_price: float, volume: float) -> PriceBar:
     """Construct one deterministic price bar."""
 
     return PriceBar(open=open_price, close=close_price, volume=volume)
+
+
+def _confirming_history(_index: str) -> list[float]:
+    """Create deterministic market history for run orchestration tests."""
+
+    return [100.0] * 200
+
+
+def test_run_retries_transient_stock_failures_after_a_cooldown(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Rate-limited tickers get one additional bounded recovery pass."""
+
+    attempts: list[str] = []
+    sleeps: list[float] = []
+
+    def _transient_stock_row(recovered_ticker: str) -> dict[str, object]:
+        return {
+            "Ticker": recovered_ticker,
+            "Company_Name": f"{recovered_ticker} Company",
+            "Current_Price": 100.0,
+            "Return_1Y": 0.9,
+            "Quarterly_EPS_Growth": 0.3,
+            "Annual_EPS_Growth": 0.3,
+            "Institutional_Ownership": 0.7,
+        }
+
+    def fetch_stock(ticker: str) -> dict[str, object] | None:
+        attempts.append(ticker)
+        if ticker == "AAA" and len(attempts) == 1:
+            return None
+        return _transient_stock_row(ticker)
+
+    monkeypatch.setattr(
+        "canslim_analysis.pipeline.quantitative.sleep",
+        sleeps.append,
+    )
+    result = run_quantitative_analysis(
+        PipelineConfig(max_workers=1, min_rs_rating=0.1, retry_delay=5.0),
+        QuantitativeProviders(
+            fetch_universe=lambda _config: ["AAA", "BBB"],
+            fetch_market_history=_confirming_history,
+            fetch_stock=fetch_stock,
+        ),
+        output_dir=tmp_path,
+    )
+
+    assert result.failed_fetches == 0
+    assert attempts == ["AAA", "BBB", "AAA"]
+    assert sleeps == [10.0]
+    artifact = json.loads(
+        (tmp_path / "intermediate_canslim.json").read_text(encoding="utf-8")
+    )
+    assert artifact["Metadata"]["Failed_Fetches"] == 0
+
+
+def test_run_does_not_cooldown_retry_when_every_ticker_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A complete provider outage fails without another sequential pass."""
+
+    sleeps: list[float] = []
+    monkeypatch.setattr(
+        "canslim_analysis.pipeline.quantitative.sleep",
+        sleeps.append,
+    )
+
+    with pytest.raises(ExternalDataError, match="No stock data"):
+        run_quantitative_analysis(
+            PipelineConfig(max_workers=1),
+            QuantitativeProviders(
+                fetch_universe=lambda _config: ["AAA"],
+                fetch_market_history=_confirming_history,
+                fetch_stock=lambda _ticker: None,
+            ),
+            output_dir=tmp_path,
+        )
+
+    assert sleeps == []
 
 
 @pytest.mark.parametrize(

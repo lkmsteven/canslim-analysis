@@ -101,13 +101,11 @@ config.local.json
 # Test artifacts
 .test_results/
 
-# Output reports - keep the folder but ignore generated PDFs
-# out/*.pdf
-test_output/
+# Stable generated-artifact directory: keep only its tracked placeholder.
+/out/*
+!/out/.gitkeep
 
-# Generated reports (keep templates, ignore generated)
-*.pdf
-!README.pdf
+test_output/
 reports/
 output/
 

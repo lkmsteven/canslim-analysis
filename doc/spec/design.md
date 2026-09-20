@@ -296,6 +296,8 @@ CLI composition will install Yahoo Finance and Wikipedia-backed implementations.
 
 Yahoo Finance 0.2.66 changes Python warning-filter precedence during import and still emits Pandas 4 deprecations. Provider functions restore the Pandas4 ignore filter immediately after that import so operational output remains readable.
 
+After the concurrent provider pass, a partial failure set receives one sequential recovery pass after a two-base-delay cooldown. A complete provider outage skips the cooldown and fails immediately.
+
 No new category of runtime dependency is required. Direct runtime dependencies are `requests` for HTTP retrieval, `yfinance` for market data (which supplies pandas transitively), and `reportlab` for PDF rendering. They are pinned to versions verified by local setup. The former direct `lxml` and `tqdm` dependencies are removed because the new HTML parser and orchestration do not use them. `pytest` remains a development-only test dependency.
 
 ## 9. Error-Handling Strategy

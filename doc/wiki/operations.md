@@ -59,6 +59,8 @@ Dispatched CLI commands install console and file logging through `logging_setup.
 
 ## Recovery
 
+When a quantitative run has partial provider failures, it automatically waits once and retries only the failed tickers. A complete outage fails immediately so operators can diagnose connectivity or provider availability.
+
 For an invalid or incomplete stage, use `status`, validate the latest stage, then rerun that stage from its declared input. Never repair state by editing JSON: the stage validators are the safe boundary.
 
 There is no backup/restore feature in the repository. Preserve user-created findings and valuable dated reports before rerunning a stage.

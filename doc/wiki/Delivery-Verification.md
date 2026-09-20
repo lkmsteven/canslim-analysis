@@ -27,11 +27,12 @@ The Codex-agent refactor is complete on this revision. The former standalone scr
 |---|---|
 | Bounded live quantitative smoke | Five-stock run completed and exposed the zero-candidate merge path |
 | Stale editable installation | Repaired to resolve this project's `src/` tree |
-| Full test suite | 150 passed |
+| Full test suite | 152 passed |
 | Zero-candidate workflow | Supplied findings stop safely; explicit fallback creates a conservative empty report |
 | Workflow freshness | Enrichment-to-final staleness is detected |
 | Runtime logging | Dispatched commands write the selected output-directory log |
 | Provider warning noise | Live retry emits operational logs without Pandas4 warnings |
+| Partial rate-limit recovery | Live retry reduced 30 transient stock-fetch failures to 3 and completed with 13 candidates |
 
 ## Dependency Pins
 

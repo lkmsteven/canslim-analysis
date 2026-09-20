@@ -9,7 +9,7 @@
 | Branch | `main`, 17 commits ahead of `origin/main` before this wiki write |
 | Baseline working tree | Clean before wiki-only changes |
 | Environment | Windows / PowerShell |
-| Baseline test collection | 150 tests |
+| Baseline test collection | 152 tests |
 
 This wiki reconciles the existing ten wiki pages and adds project-wide inventory, development, testing, traceability, operations, data, decisions, and troubleshooting pages. It does not replace the normative specifications under [`../spec/requirements.md`](../spec/requirements.md), [`../spec/design.md`](../spec/design.md), and [`../spec/tasks.md`](../spec/tasks.md).
 
@@ -58,7 +58,7 @@ See [development.md](development.md) for platform notes and [testing-quality.md]
 ## Current evidence highlights
 
 - Verified: the installed CLI exposes `quantitative`, `prepare-enrichment`, `enrich`, `finalize`, `status`, `validate`, `report`, and `run`.
-- Verified: 150 tests are collected and passed during delivery verification.
+- Verified: 152 tests are collected and passed during delivery verification.
 - Verified: direct dependencies are pinned in [`../../pyproject.toml`](../../pyproject.toml).
 - Gap: no lockfile pins transitive dependencies.
 - Verified: unexpected errors retain the stable terminal message while writing a traceback to the selected runtime log.

@@ -5,7 +5,7 @@
 - Framework: pytest 9.1.1, declared as the `dev` extra in [`../../pyproject.toml`](../../pyproject.toml).
 - Test root: `tests/`.
 - pytest settings: `testpaths = ["tests"]`, `pythonpath = ["src"]`, strict markers, and project-local temporary base directory.
-- Baseline collection: 150 tests.
+- Baseline collection: 152 tests.
 - Tests do not require live market data, Wikipedia, Yahoo Finance, an AI provider, or network access.
 
 ## Commands
@@ -33,7 +33,7 @@
 | `test_market_direction.py` | Confirmed uptrend, under pressure, downtrend, short/malformed history, moving-average shape. |
 | `test_pdf_reporting.py` | PDF command, deterministic filename, `%PDF-` signature, missing/malformed input. |
 | `test_quantitative_cli.py` | Quantitative options, schema metadata, provider failures, universe limit, invalid config. |
-| `test_quantitative_transform.py` | Numeric/ratio normalization, CAGR, acceleration, S/N evidence, ownership context, ranking, candidate selection. |
+| `test_quantitative_transform.py` | Numeric/ratio normalization, CAGR, acceleration, S/N evidence, ownership context, ranking, candidate selection, partial-fetch cooldown recovery. |
 | `test_scoring.py` | Enriched validation, legacy aliases, verified-over-pending precedence, criterion order, S conjunction, M mapping, grades. |
 | `test_skill_document.py` | Skill front matter, command alignment, no OpenClaw dependency, safety and response contracts. |
 | `test_workflow_run.py` | Full pipeline, findings gate, zero-candidate guard, explicit fallback, total and findings failures. |

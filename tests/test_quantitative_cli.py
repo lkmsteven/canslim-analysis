@@ -210,7 +210,14 @@ def test_quantitative_stage_applies_universe_limit(tmp_path: Path) -> None:
         fetch_stock=fetch_stock,
     )
     exit_code = main(
-        ["quantitative", "--limit", "2"], providers=providers
+        [
+            "quantitative",
+            "--limit",
+            "2",
+            "--output-dir",
+            str(tmp_path / "out"),
+        ],
+        providers=providers,
     )
 
     assert exit_code == 0
