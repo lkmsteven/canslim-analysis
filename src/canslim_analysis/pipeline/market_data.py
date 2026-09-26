@@ -41,6 +41,27 @@ def _suppress_pandas4_warnings() -> None:
     warnings.filterwarnings("ignore", category=Pandas4Warning)
 
 
+def _price_bars_from_history(frame: Any) -> list[PriceBar]:
+    """Convert provider history into bars, discarding unusable observations."""
+
+    if frame is None or getattr(frame, "empty", True):
+        return []
+
+    bars: list[PriceBar] = []
+    for _, row in frame.iterrows():
+        open_value = safe_float(row.get("Open"))
+        close_value = safe_float(row.get("Close"))
+        volume_value = safe_float(row.get("Volume"))
+        if (
+            open_value is None
+            or close_value is None
+            or volume_value is None
+        ):
+            continue
+        bars.append(PriceBar(open=open_value, close=close_value, volume=volume_value))
+    return bars
+
+
 class _SymbolTableParser(HTMLParser):
     """Collect rows from each top-level HTML table in a document."""
 
@@ -207,8 +228,11 @@ def fetch_sp500_tickers(
     )
 
 
-def _eps_values_from_frame(frame: Any, row_names: tuple[str, ...]) -> list[float]:
-    """Extract numeric EPS values from a provider accounting frame."""
+def _eps_values_from_frame(
+    frame: Any,
+    row_names: tuple[str, ...],
+) -> list[float | None]:
+    """Extract provider-ordered EPS values while preserving missing periods."""
 
     if frame is None or getattr(frame, "empty", True):
         return []
@@ -216,9 +240,8 @@ def _eps_values_from_frame(frame: Any, row_names: tuple[str, ...]) -> list[float
         if row_name not in getattr(frame, "index", []):
             continue
         values = [safe_float(value) for value in frame.loc[row_name].tolist()]
-        numeric = [value for value in values if value is not None]
-        if numeric:
-            return numeric
+        if any(value is not None for value in values):
+            return values
     return []
 
 
@@ -228,8 +251,16 @@ def _annual_eps_growth(stock: Any) -> float | None:
     values = _eps_values_from_frame(stock.income_stmt, ("Diluted EPS", "Basic EPS"))
     if len(values) < 3:
         return None
-    newest, oldest = values[0], values[-1]
-    periods = len(values) - 1
+    valid_indices = [index for index, value in enumerate(values) if value is not None]
+    if len(valid_indices) < 2:
+        return None
+    newest_index = valid_indices[0]
+    oldest_index = valid_indices[-1]
+    newest = values[newest_index]
+    oldest = values[oldest_index]
+    periods = oldest_index - newest_index
+    if periods == 0 or newest is None or oldest is None:
+        return None
     if newest <= 0 or oldest <= 0:
         return None
     return (newest / oldest) ** (1 / periods) - 1
@@ -284,17 +315,12 @@ def fetch_stock_yfinance(
             stock = yf.Ticker(ticker)
             info = stock.info or {}
             frame = stock.history(period="1y", auto_adjust=False)
-            if frame.empty or len(frame) < config.min_history_days:
+            if frame.empty:
                 return None
 
-            bars = [
-                PriceBar(
-                    open=float(row["Open"]),
-                    close=float(row["Close"]),
-                    volume=float(row["Volume"]),
-                )
-                for _, row in frame.iterrows()
-            ]
+            bars = _price_bars_from_history(frame)
+            if len(bars) < config.min_history_days:
+                return None
             current_price = bars[-1].close
             price_1y_ago = bars[0].close
             if price_1y_ago == 0:

@@ -177,6 +177,24 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 - **Scope:** After a live run encounters partial stock-fetch failures, wait once for the provider rate-limit window and retry only failed tickers. Preserve immediate failure for complete provider outages. Keep tests isolated from the default `out/` directory and all generated `out/` artifacts out of Git except the directory placeholder.
 - **Acceptance test:** Offline orchestration tests prove a failed ticker is retried after the cooldown and recovered, a total outage performs no cooldown retry, the universe-limit CLI test writes only to its temporary directory, and Git ignores generated workflow artifacts while retaining `out/.gitkeep`. Full suite passes.
 
+### T-020 Guard malformed provider price panels
+
+- **Status:** `done`
+- **Depends on:** T-019
+- **Requirements:** RQ-010, RQ-011
+- **Design sections:** §8.2 Provider Isolation, §9 Error Handling and Reliability
+- **Scope:** Discard provider price rows with non-finite required values and reject a stock whose cleaned panel has fewer than the configured usable-history minimum before calculating any metric.
+- **Acceptance test:** A provider panel containing at least the minimum raw rows but fewer than the minimum usable bars returns no stock record without retries; the malformed-row transformation regression remains green, and the full suite plus a live Yahoo Finance quantitative run pass.
+
+### T-021 Preserve EPS panel alignment
+
+- **Status:** `done`
+- **Depends on:** T-020
+- **Requirements:** RQ-010, RQ-011
+- **Design sections:** §8.2 Provider Isolation, §9 Error Handling and Reliability
+- **Scope:** Preserve missing-value positions when extracting provider EPS rows, select positional valid endpoints for annual CAGR, and require both positional endpoints for quarterly year-over-year comparisons so missing observations cannot shift periods or cause subtraction failures.
+- **Acceptance test:** A missing latest quarterly EPS returns no growth instead of raising, a missing middle annual EPS uses true endpoint spacing, an incomplete extraction preserves positional nulls, and the full suite plus a live Yahoo Finance quantitative run pass.
+
 ## Dependency Overview
 
 ```text
@@ -199,6 +217,8 @@ T-001
     │              │                           └── T-017
     │              │                               └── T-018
     │              │                                   └── T-019
+    │              │                                       └── T-020
+    │              │                                           └── T-021
 ```
 
 ## Coverage Check
@@ -214,8 +234,8 @@ T-001
 | RQ-007 | T-012, T-014 |
 | RQ-008 | T-015, T-016, T-017 |
 | RQ-009 | T-001, T-017 |
-| RQ-010 | T-001, T-003, T-004, T-005, T-009 |
-| RQ-011 | T-002, T-003, T-005, T-006, T-018, T-019 |
+| RQ-010 | T-001, T-003, T-004, T-005, T-009, T-020, T-021 |
+| RQ-011 | T-002, T-003, T-005, T-006, T-018, T-019, T-020, T-021 |
 | RQ-012 | T-001, T-002, T-003, T-004, T-005, T-016, T-017 |
 | RQ-013 | T-002, T-017 |
 | RQ-014 | T-001, T-015, T-017 |

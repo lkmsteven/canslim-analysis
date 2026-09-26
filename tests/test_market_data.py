@@ -2,15 +2,22 @@
 
 from __future__ import annotations
 
+import sys
+import types
 import warnings
 
 import pytest
 
 from canslim_analysis.errors import ExternalDataError, SchemaValidationError
 from canslim_analysis.pipeline.config import PipelineConfig
+from canslim_analysis.pipeline.quantitative import PriceBar
 from canslim_analysis.pipeline.market_data import (
     SP500_URL,
+    _annual_eps_growth,
+    _eps_values_from_frame,
+    _price_bars_from_history,
     _suppress_pandas4_warnings,
+    fetch_stock_yfinance,
     fetch_sp500_tickers,
     parse_sp500_symbols,
 )
@@ -105,6 +112,100 @@ def test_pandas4_suppression_takes_precedence_over_yfinance_default() -> None:
         warnings.simplefilter("default", Pandas4Warning)
         _suppress_pandas4_warnings()
         assert warnings.filters[0][:3] == ("ignore", None, Pandas4Warning)
+
+
+def test_price_bars_ignore_rows_with_invalid_required_fields() -> None:
+    """A provider row missing a usable close, open, or volume is discarded."""
+
+    class Frame:
+        empty = False
+
+        def iterrows(self):
+            yield "valid", {
+                "Open": 10.0,
+                "Close": 11.0,
+                "Volume": 1_000.0,
+            }
+            yield "missing", {
+                "Open": 12.0,
+                "Close": None,
+                "Volume": 2_000.0,
+            }
+            yield "nan", {
+                "Open": 13.0,
+                "Close": float("nan"),
+                "Volume": 3_000.0,
+            }
+
+    assert _price_bars_from_history(Frame()) == [
+        PriceBar(open=10.0, close=11.0, volume=1_000.0)
+    ]
+
+
+def test_stock_fetch_rejects_insufficient_usable_price_bars(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Usable history, not the raw provider row count, satisfies the minimum."""
+
+    class Frame:
+        empty = False
+
+        def __len__(self) -> int:
+            return 250
+
+        def iterrows(self):
+            for _ in range(100):
+                yield None, {
+                    "Open": 10.0,
+                    "Close": 11.0,
+                    "Volume": 1_000.0,
+                }
+
+    class Stock:
+        info = {}
+        income_stmt = None
+        quarterly_income_stmt = None
+
+        def history(self, **_arguments):
+            return Frame()
+
+    fake_yfinance = types.SimpleNamespace(Ticker=lambda _ticker: Stock())
+    monkeypatch.setitem(sys.modules, "yfinance", fake_yfinance)
+    config = PipelineConfig(min_history_days=250, max_retries=1)
+
+    assert fetch_stock_yfinance("AAA", config) is None
+
+
+def test_eps_extraction_preserves_missing_period_alignment() -> None:
+    """A missing EPS observation cannot be collapsed out of the panel."""
+
+    class Series:
+        def __init__(self, values: list[float | None]) -> None:
+            self.values = values
+
+        def tolist(self) -> list[float | None]:
+            return self.values
+
+    class Frame:
+        empty = False
+        index = ["Diluted EPS", "Basic EPS"]
+        loc = {
+            "Diluted EPS": Series([2.0, None, 1.0, 0.5]),
+            "Basic EPS": Series([1.0, None, 0.5, 0.25]),
+        }
+
+    frame = Frame()
+
+    assert _eps_values_from_frame(frame, ("Diluted EPS", "Basic EPS")) == [
+        2.0,
+        None,
+        1.0,
+        0.5,
+    ]
+    expected_growth = (2.0 / 0.5) ** (1 / 3) - 1
+    assert _annual_eps_growth(types.SimpleNamespace(income_stmt=frame)) == (
+        pytest.approx(expected_growth)
+    )
 
 
 def test_fetch_sp500_tickers_fails_after_bounded_attempts() -> None:

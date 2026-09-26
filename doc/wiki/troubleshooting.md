@@ -130,6 +130,16 @@ Verified: no `--findings` path and no explicit fallback were supplied, or the cu
 
 Research generated candidates when present, then run with `--findings`. Use `--unverified-fallback` only when conservative all-false qualitative results are explicitly acceptable, and disclose that limitation.
 
+## A symbol is skipped after malformed provider rows
+
+### Likely cause
+
+Yahoo Finance can return a malformed or non-finite price observation, or an EPS panel with missing periods. The pipeline discards unusable price rows and preserves EPS positions so a missing value cannot silently shift period alignment.
+
+### Action
+
+Rerun the quantitative stage. If the same symbol remains absent, compare its Yahoo Finance history and statements directly, then record a deterministic fixture and task before changing parser logic.
+
 ## No file log exists
 
 ### Likely cause

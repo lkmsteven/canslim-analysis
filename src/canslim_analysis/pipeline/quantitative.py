@@ -237,11 +237,19 @@ def calculate_quarterly_acceleration(
         "eps_values": [value for value in normalized if value is not None],
     }
 
-    if len(normalized) >= 5 and normalized[4] not in (None, 0):
+    if (
+        len(normalized) >= 5
+        and normalized[0] is not None
+        and normalized[4] not in (None, 0)
+    ):
         result["latest_yoy_growth"] = (
             normalized[0] - normalized[4]
         ) / abs(normalized[4])
-    if len(normalized) >= 6 and normalized[5] not in (None, 0):
+    if (
+        len(normalized) >= 6
+        and normalized[1] is not None
+        and normalized[5] not in (None, 0)
+    ):
         result["previous_yoy_growth"] = (
             normalized[1] - normalized[5]
         ) / abs(normalized[5])

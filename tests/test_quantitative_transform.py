@@ -170,6 +170,16 @@ def test_quarterly_acceleration_requires_two_positive_increases() -> None:
     assert result["is_accelerating"] is False
 
 
+def test_quarterly_acceleration_requires_present_positional_endpoints() -> None:
+    """A missing newest observation cannot be subtracted as zero or None."""
+
+    result = calculate_quarterly_acceleration([None, 4.0, 3.0, 2.0, 1.0, 0.8])
+
+    assert result["latest_yoy_growth"] is None
+    assert result["previous_yoy_growth"] == pytest.approx(4.0)
+    assert result["is_accelerating"] is False
+
+
 def test_supply_demand_requires_both_volume_conditions() -> None:
     """Quantitative S is true only when volume strength and skew both pass."""
 

@@ -5,7 +5,7 @@
 - Framework: pytest 9.1.1, declared as the `dev` extra in [`../../pyproject.toml`](../../pyproject.toml).
 - Test root: `tests/`.
 - pytest settings: `testpaths = ["tests"]`, `pythonpath = ["src"]`, strict markers, and project-local temporary base directory.
-- Baseline collection: 152 tests.
+- Baseline collection: 156 tests.
 - Tests do not require live market data, Wikipedia, Yahoo Finance, an AI provider, or network access.
 
 ## Commands
@@ -29,11 +29,11 @@
 | `test_enrichment_merge.py` | Exact finding fields, evidence rules, zero-candidate mismatch, unknown/duplicate/missing coverage, type checks, merge isolation, CLI success. |
 | `test_final_reporting.py` | Ranking, grades, score distribution, nullable metrics, empty market, CLI output/errors. |
 | `test_infrastructure.py` | Config defaults and bounds, immutability, error hierarchy, path resolution, logging helper, and local editable-install source. |
-| `test_market_data.py` | Symbol parsing/normalization, malformed/empty HTML, transient and bounded failures, custom URL, Pandas4 suppression. |
+| `test_market_data.py` | Symbol parsing/normalization, malformed/empty HTML, malformed and insufficient price panels, EPS positional alignment, transient and bounded failures, custom URL, Pandas4 suppression. |
 | `test_market_direction.py` | Confirmed uptrend, under pressure, downtrend, short/malformed history, moving-average shape. |
 | `test_pdf_reporting.py` | PDF command, deterministic filename, `%PDF-` signature, missing/malformed input. |
 | `test_quantitative_cli.py` | Quantitative options, schema metadata, provider failures, universe limit, invalid config. |
-| `test_quantitative_transform.py` | Numeric/ratio normalization, CAGR, acceleration, S/N evidence, ownership context, ranking, candidate selection, partial-fetch cooldown recovery. |
+| `test_quantitative_transform.py` | Numeric/ratio normalization, CAGR, positional quarterly acceleration, S/N evidence, ownership context, ranking, candidate selection, partial-fetch cooldown recovery. |
 | `test_scoring.py` | Enriched validation, legacy aliases, verified-over-pending precedence, criterion order, S conjunction, M mapping, grades. |
 | `test_skill_document.py` | Skill front matter, command alignment, no OpenClaw dependency, safety and response contracts. |
 | `test_workflow_run.py` | Full pipeline, findings gate, zero-candidate guard, explicit fallback, total and findings failures. |
@@ -54,7 +54,7 @@ python -m canslim_analysis --help
 python -m canslim_analysis status --json --output-dir <empty-directory>
 ```
 
-The delivery revision recorded all four checks as passing.
+The delivery revision recorded all four checks as passing. The 2026-09-26 delivery additionally exercised a full 503-ticker Yahoo Finance quantitative run after the 156-test offline suite passed.
 
 ## Known limits
 

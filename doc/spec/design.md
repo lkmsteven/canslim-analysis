@@ -294,6 +294,8 @@ External access will be isolated behind small, injectable functions or classes:
 
 CLI composition will install Yahoo Finance and Wikipedia-backed implementations. Tests will install in-memory or file-backed fakes. This avoids live network access in unit tests and allows malformed, partial, timeout, and empty external responses to be tested deterministically.
 
+Fundamentals are treated as panel data, not an unordered bag of numbers. Missing EPS observations retain their column positions. Annual CAGR selects the newest and oldest valid endpoints and uses their positional distance, while quarterly year-over-year checks both positional endpoints before subtraction. This prevents removal of missing values from changing period spacing or causing a masked type error. Price rows must likewise be cleaned before the usable-history threshold is checked.
+
 Yahoo Finance 0.2.66 changes Python warning-filter precedence during import and still emits Pandas 4 deprecations. Provider functions restore the Pandas4 ignore filter immediately after that import so operational output remains readable.
 
 After the concurrent provider pass, a partial failure set receives one sequential recovery pass after a two-base-delay cooldown. A complete provider outage skips the cooldown and fails immediately.

@@ -34,6 +34,16 @@ The Codex-agent refactor is complete on this revision. The former standalone scr
 | Provider warning noise | Live retry emits operational logs without Pandas4 warnings |
 | Partial rate-limit recovery | Live retry reduced 30 transient stock-fetch failures to 3 and completed with 13 candidates |
 
+## Verified on 2026-09-26
+
+| Check | Result |
+|---|---|
+| Full offline suite | 156 passed |
+| Live quantitative regression | Full 503-ticker Yahoo Finance run completed |
+| Live outcome | 500 evaluated; 3 provider fetch failures; 73 missing fundamentals; 14 quantitative candidates |
+| Provider defect regression | Malformed/insufficient price panels cannot enter metric calculations |
+| EPS defect regression | Missing quarterly endpoints no longer subtract `None`; annual CAGR preserves positional period spacing |
+
 ## Dependency Pins
 
 Direct runtime dependencies are pinned to locally verified versions:
