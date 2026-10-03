@@ -432,3 +432,25 @@ After implementation, Codex can:
 8. Report success or failure consistently.
 
 The repository will also have the mandatory specification layout, synchronized wiki, reproducible setup, and an offline test suite.
+
+## 16. Verified Research Mode Design
+
+### 16.1 Initial contract inspection
+
+The quantitative writer already filters the S&P 500 panel before writing `Stocks`, and `Metadata.Stocks_Passed_To_AI` records that row count. Therefore a verified run treats every `Stocks` row as a candidate occurrence and verifies the metadata count before research. `Metadata.Date_Run` is the sole `analysis_date`. The current artifact contract uses ticker-only identity and rejects duplicate tickers; separate share classes already receive distinct tickers such as `GOOGL` and `GOOG`.
+
+The repository previously had no qualitative evidence metadata contract and no numeric backward freshness threshold. Verified mode does not invent one. Its explicit freshness rule is that evidence must have a valid publication or filing date no later than `analysis_date`; evidence dated after that date is stale and false. Older evidence remains eligible only if it directly supports the criterion and is not superseded or contradicted. No evidence date defaults to the current date.
+
+### 16.2 Evidence and findings model
+
+Verified mode consumes a separate evidence artifact so primary research remains auditable and deterministic while candidate discovery remains artifact-driven. A negative evidence record contains `Ticker`, a qualitative `Criterion`, `Supported`, and `Summary`; a positive record adds `Issuer`, `Share_Class`, `Source`, `Evidence_Date`, `Citation`, and `Criterion_Context`. `Candidate_ID` is additive and optional in both record shapes: when present it must be non-empty text matching exactly one candidate occurrence, and legacy ticker-unique records may omit it. The provider is responsible for issuer and share-class resolution; the mode independently rejects ambiguous or post-analysis evidence.
+
+The existing findings schema remains exactly `Ticker`, three booleans, and three details strings. For the compatible artifact-driven path, `Candidate_ID` is an additive optional field on intermediate candidates and findings. A candidate without `Candidate_ID` continues to use ticker identity and must be ticker-unique. When duplicate ticker rows exist, every row must carry a unique non-empty `Candidate_ID`; otherwise verified mode fails before research. Findings mirror the selected identity exactly. Existing schema 2.1 files without the additive field remain accepted by `enrich`.
+
+Evidence details are serialized as concise text containing summary, source, date, citation, and criterion context. This preserves the public enrichment, scoring, final-report, and PDF schemas. Evidence policy is conservative: unsupported, ambiguous, contradictory, inaccessible, stale, or merely tangential evidence is false and records the reason in details; secondary offerings, lockup expirations, dilution, and unexecuted authorizations are explicitly not positive supply evidence.
+
+### 16.3 CLI and orchestration
+
+`python -m canslim_analysis verified-research --input <intermediate.json> --evidence <evidence.json> --output <findings.json>` performs validation, candidate discovery, evidence validation/classification, in-memory one-to-one findings validation, and atomic JSON output. `--unverified-fallback` is intentionally not available on this command. The command returns the stable project exit codes, including configuration error 2, schema error 3, missing artifact 4, and external-data error 5.
+
+Automated tests use local intermediate and evidence fixtures plus fake network responses. They cover all passing-row discovery, non-passing exclusion, one-to-one occurrence mapping, duplicate/share-class identity, complete true-flag metadata, post-analysis rejection, conservative negative classifications, backward-compatible enrich files, downstream enrich/finalize/validate/PDF integration, expected failures, and atomic output behavior.

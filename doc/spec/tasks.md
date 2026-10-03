@@ -195,6 +195,33 @@ A task may move to `done` only when its acceptance tests pass, the full test sui
 - **Scope:** Preserve missing-value positions when extracting provider EPS rows, select positional valid endpoints for annual CAGR, and require both positional endpoints for quarterly year-over-year comparisons so missing observations cannot shift periods or cause subtraction failures.
 - **Acceptance test:** A missing latest quarterly EPS returns no growth instead of raising, a missing middle annual EPS uses true endpoint spacing, an incomplete extraction preserves positional nulls, and the full suite plus a live Yahoo Finance quantitative run pass.
 
+### T-022 Add verified research discovery and identity validation
+
+- **Status:** `done`
+- **Depends on:** T-021
+- **Requirements:** RQ-016
+- **Design sections:** §16.1 Initial Contract Inspection, §16.2 Evidence and Findings Model
+- **Scope:** Validate an explicit intermediate artifact and analysis date, preserve candidate order, enforce one findings entry per occurrence, support additive `Candidate_ID` identity for duplicate tickers while accepting legacy ticker-only files, and fail safely on malformed, empty, stale-count, or unsafe-identity input.
+- **Acceptance test:** Offline tests prove all passing rows produce ordered one-to-one findings, non-passing rows are absent by contract, duplicate tickers require unique IDs, share classes remain distinct, and every specified malformed/empty/missing-date input returns the documented error.
+
+### T-023 Add conservative verified evidence conversion
+
+- **Status:** `done`
+- **Depends on:** T-022
+- **Requirements:** RQ-016
+- **Design sections:** §16.2 Evidence and Findings Model, §16.3 CLI and Orchestration
+- **Scope:** Validate attributed, dated, retrievable, issuer/share-class-specific evidence, including optional matching non-empty `Candidate_ID` occurrence identity on positive records; convert direct positive evidence to the existing findings schema with complete citation-bearing details; conservatively reject post-analysis, missing, stale, ambiguous, contradictory, low-quality, tangential, offering, lockup, dilution, and unexecuted-buyback evidence; and write findings atomically.
+- **Acceptance test:** Offline tests prove every true flag has all evidence metadata, post-analysis evidence is false, all specified inconclusive/negative evidence remains false with a reason, a failed conversion leaves no completed output, and legacy findings remain enrich-compatible.
+
+### T-024 Integrate, document, and execute verified research
+
+- **Status:** `in-progress`
+- **Depends on:** T-023
+- **Requirements:** RQ-016
+- **Design sections:** §16.3 CLI and Orchestration
+- **Scope:** Expose `verified-research` through CLI help, validate enrich/finalize/validate/report integration, update skill and project documentation, run the selected 2026-09-26 intermediate artifact, execute supported downstream commands, inspect generated artifacts and final diff, and push reviewed local commits.
+- **Acceptance test:** The documented research command creates validated findings, enrich/finalize/validate/report succeed, all dated artifacts exist, documentation and PDF carry the educational-research disclaimer, the full local-venv suite passes, and the final diff contains no unrelated changes or secrets.
+
 ## Dependency Overview
 
 ```text
@@ -240,3 +267,4 @@ T-001
 | RQ-013 | T-002, T-017 |
 | RQ-014 | T-001, T-015, T-017 |
 | RQ-015 | T-018 |
+| RQ-016 | T-022, T-023, T-024 |

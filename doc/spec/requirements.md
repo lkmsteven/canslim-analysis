@@ -215,6 +215,25 @@ The workflow SHALL prevent qualitative findings from one quantitative run from b
 - `run --unverified-fallback` may continue with zero candidates only because all qualitative values remain explicitly conservative false values.
 - Runtime logging is written to the selected output directory and the local editable installation resolves to this project's source tree.
 
+### RQ-016 — Artifact-driven verified research mode
+
+**Priority:** MUST
+
+The CLI SHALL provide a verified research mode that accepts an explicit intermediate quantitative artifact, validates it before research, derives every research target solely and order-preservingly from its passing-candidate rows, produces schema-compatible findings, and atomically persists the result.
+
+**Acceptance criteria:**
+
+- Passing candidates are the rows in `Stocks`, with `Metadata.Stocks_Passed_To_AI` equal to the row count and greater than zero.
+- Candidate occurrence identity preserves separate share classes and, when duplicate tickers are present, requires unique explicit `Candidate_ID` values on both candidate and finding rows.
+- A positive evidence record may include `Candidate_ID` as additive occurrence identity; when present, it SHALL be non-empty text matching one candidate occurrence, while omission remains valid for a ticker-unique legacy record.
+- Existing intermediate and findings files that use the schema 2.1 ticker-only contract remain accepted.
+- `analysis_date` is parsed from `Metadata.Date_Run`; missing or malformed dates fail before research.
+- Research evidence records are dated, attributed, retrievable, issuer/share-class specific, and dated no later than `analysis_date`.
+- True N, S, and I flags require source, publication or filing date, canonical citation, evidence summary, and criterion context; unsupported, ambiguous, contradictory, stale, or low-quality evidence remains false.
+- Secondary offerings, lockup expirations, dilution, and unexecuted buyback authorizations are never classified automatically as positive float tightness.
+- Research output is validated and written atomically, with no completed-looking findings file left after a research failure.
+- Missing/unreadable input, malformed or schema-invalid input, zero candidates, unsafe identity, unavailable research evidence, and downstream failures return documented non-zero exits.
+
 ## 5. Constraints
 
 - Work must remain inside `Projects/canslim-analysis`.
