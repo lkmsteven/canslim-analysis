@@ -32,6 +32,7 @@ COMMANDS = (
     "run",
     "status",
     "validate",
+    "verified-research",
 )
 
 logger = logging.getLogger(__name__)
@@ -80,6 +81,11 @@ def build_parser() -> argparse.ArgumentParser:
     _add_quantitative_arguments(run_parser)
     run_parser.add_argument("--findings")
     run_parser.add_argument("--unverified-fallback", action="store_true")
+    research = subparsers.add_parser("verified-research")
+    research.add_argument("--input", required=True)
+    research.add_argument("--evidence", required=True)
+    research.add_argument("--output", required=True)
+    research.add_argument("--output-dir")
 
     for command in COMMANDS:
         if command not in {
@@ -91,6 +97,7 @@ def build_parser() -> argparse.ArgumentParser:
             "validate",
             "report",
             "run",
+            "verified-research",
         }:
             subparsers.add_parser(command)
 
@@ -306,6 +313,32 @@ def _report(arguments: argparse.Namespace) -> int:
     return 0
 
 
+def _verified_research(arguments: argparse.Namespace) -> int:
+    """Validate research evidence and atomically persist findings."""
+
+    from canslim_analysis.pipeline.research import (
+        load_research_input,
+        verified_research_findings,
+        write_research_findings,
+    )
+
+    quantitative_data = load_research_input(
+        Path(arguments.input).expanduser().resolve(),
+        "Quantitative",
+    )
+    evidence_data = load_research_input(
+        Path(arguments.evidence).expanduser().resolve(),
+        "Research evidence",
+    )
+    findings = verified_research_findings(quantitative_data, evidence_data)
+    output_path = write_research_findings(
+        findings,
+        Path(arguments.output).expanduser().resolve(),
+    )
+    print(f"Verified findings saved to {output_path}")
+    return 0
+
+
 def _run(arguments: argparse.Namespace, providers: QuantitativeProviders | None) -> int:
     """Execute all workflow stages in dependency order."""
 
@@ -397,6 +430,8 @@ def main(
             return _validate(parsed)
         if parsed.command == "report":
             return _report(parsed)
+        if parsed.command == "verified-research":
+            return _verified_research(parsed)
         if parsed.command == "run":
             return _run(parsed, providers)
     except ConfigurationError as exc:

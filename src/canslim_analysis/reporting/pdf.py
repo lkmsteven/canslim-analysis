@@ -18,6 +18,10 @@ from canslim_analysis.errors import (
 
 logger = logging.getLogger(__name__)
 
+DISCLAIMER_TEXT = (
+    "Educational research and analysis — not personalized investment advice."
+)
+
 
 def _load_final_report(path: Path) -> dict[str, Any]:
     """Load and validate the final-report JSON contract."""
@@ -179,11 +183,7 @@ def render_pdf_report(
         elements.extend(
             [
                 Spacer(1, 24),
-                Paragraph(
-                    "This report is for educational analysis only and is not "
-                    "investment advice. Market data may be delayed or incomplete.",
-                    styles["Italic"],
-                ),
+                Paragraph(DISCLAIMER_TEXT, styles["Italic"]),
             ]
         )
         document = SimpleDocTemplate(

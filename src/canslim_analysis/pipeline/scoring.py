@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from canslim_analysis.errors import SchemaValidationError
+from canslim_analysis.pipeline.research import candidate_identity
 
 
 SCHEMA_VERSION = "2.1"
@@ -32,7 +33,7 @@ def validate_enriched_dataset(data: Any) -> list[dict[str, Any]]:
     if not isinstance(stocks, list):
         raise SchemaValidationError("Enriched input is missing a Stocks array")
 
-    seen: set[str] = set()
+    identities: list[str] = []
     for index, stock in enumerate(stocks, start=1):
         if not isinstance(stock, dict):
             raise SchemaValidationError(f"Stock #{index} must be an object")
@@ -46,9 +47,12 @@ def validate_enriched_dataset(data: Any) -> list[dict[str, Any]]:
             raise SchemaValidationError(
                 f"Stock {ticker} requires Quantitative_Metrics"
             )
-        if ticker in seen:
-            raise SchemaValidationError(f"Duplicate enriched ticker: {ticker}")
-        seen.add(ticker)
+        try:
+            identities.append(candidate_identity(stock))
+        except SchemaValidationError as exc:
+            raise SchemaValidationError(f"Stock #{index} has an invalid occurrence identity") from exc
+    if len(identities) != len(set(identities)):
+        raise SchemaValidationError("Enriched candidate occurrence identity is not unique")
     return stocks
 
 

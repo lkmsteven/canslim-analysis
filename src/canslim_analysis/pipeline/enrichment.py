@@ -29,6 +29,7 @@ FINDING_EVIDENCE_FIELDS = (
     "I_Institutional_Details",
 )
 FINDING_FIELDS = ("Ticker", *FINDING_BOOLEAN_FIELDS, *FINDING_EVIDENCE_FIELDS)
+FINDING_OPTIONAL_FIELDS = ("Candidate_ID",)
 
 
 def validate_quantitative_input(data: Any) -> list[dict[str, Any]]:
@@ -53,14 +54,26 @@ def validate_quantitative_input(data: Any) -> list[dict[str, Any]]:
         raise SchemaValidationError("Quantitative input is missing a Stocks array")
 
     seen: set[str] = set()
+    candidate_ids: set[str] = set()
     for stock in stocks:
         if not isinstance(stock, dict):
             raise SchemaValidationError("Each quantitative candidate must be an object")
         ticker = stock.get("Ticker")
         if not isinstance(ticker, str) or not ticker.strip():
             raise SchemaValidationError("Each quantitative candidate requires a ticker")
-        if ticker in seen:
-            raise SchemaValidationError(f"Duplicate candidate ticker: {ticker}")
+        candidate_id = stock.get("Candidate_ID")
+        if candidate_id is not None:
+            if not isinstance(candidate_id, str) or not candidate_id.strip():
+                raise SchemaValidationError(
+                    f"Candidate {ticker} requires non-empty Candidate_ID text"
+                )
+            if candidate_id in candidate_ids:
+                raise SchemaValidationError(f"Duplicate candidate identity: {candidate_id}")
+            candidate_ids.add(candidate_id)
+        if ticker in seen and candidate_id is None:
+            raise SchemaValidationError(
+                f"Duplicate candidate ticker {ticker} requires a unique Candidate_ID"
+            )
         seen.add(ticker)
         if not isinstance(stock.get("Quantitative_Metrics"), dict):
             raise SchemaValidationError(
@@ -100,8 +113,9 @@ def build_enrichment_template(data: dict[str, Any]) -> dict[str, Any]:
 def validate_findings(
     data: Any,
     candidate_tickers: set[str],
+    candidate_keys: set[str] | None = None,
 ) -> dict[str, dict[str, Any]]:
-    """Validate findings and index them one-to-one by candidate ticker."""
+    """Validate findings and index them one-to-one by candidate occurrence."""
 
     if not isinstance(data, dict):
         raise SchemaValidationError("Findings input must be a JSON object")
@@ -116,14 +130,20 @@ def validate_findings(
     for finding in findings:
         if not isinstance(finding, dict):
             raise SchemaValidationError("Each finding must be an object")
-        if set(finding) != set(FINDING_FIELDS):
+        allowed_fields = {*FINDING_FIELDS, *FINDING_OPTIONAL_FIELDS}
+        if not set(finding).issubset(allowed_fields):
             raise SchemaValidationError(
-                "Finding fields must exactly match the documented template"
+                "Finding fields must match the documented template"
             )
+        if "Candidate_ID" in finding and candidate_keys is None:
+            raise SchemaValidationError("Findings require matching candidate identities")
         ticker = finding["Ticker"]
         if not isinstance(ticker, str) or not ticker.strip():
             raise SchemaValidationError("Each finding requires a valid ticker")
-        if ticker not in candidate_tickers:
+        identity = finding.get("Candidate_ID") or ticker
+        if candidate_keys is not None and identity not in candidate_keys:
+            raise SchemaValidationError(f"Unknown finding candidate identity: {identity}")
+        if candidate_keys is None and ticker not in candidate_tickers:
             raise SchemaValidationError(f"Unknown finding ticker: {ticker}")
         for field in FINDING_BOOLEAN_FIELDS:
             if not isinstance(finding[field], bool):
@@ -140,13 +160,14 @@ def validate_findings(
                 raise SchemaValidationError(
                     f"True {boolean_field} requires non-empty evidence or rationale"
                 )
-        if ticker in indexed:
+        if identity in indexed:
             raise SchemaValidationError(
-                f"Exactly one finding is required for each ticker; {ticker} repeats"
+                f"Exactly one finding is required for each candidate; {identity} repeats"
             )
-        indexed[ticker] = finding
+        indexed[identity] = finding
 
-    missing = candidate_tickers.difference(indexed)
+    expected_keys = candidate_keys if candidate_keys is not None else candidate_tickers
+    missing = expected_keys.difference(indexed)
     if missing:
         raise SchemaValidationError(
             "Exactly one finding is required for each candidate; missing: "
@@ -163,6 +184,9 @@ def merge_enrichment(
 
     stocks = validate_quantitative_input(quantitative_data)
     candidate_tickers = {stock["Ticker"] for stock in stocks}
+    candidate_keys = {
+        stock.get("Candidate_ID") or stock["Ticker"] for stock in stocks
+    }
     findings = findings_data.get("Findings", []) if isinstance(findings_data, dict) else []
     if not candidate_tickers and findings:
         raise SchemaValidationError(
@@ -170,10 +194,10 @@ def merge_enrichment(
             "from a previous run. Review quantitative thresholds or rerun "
             "prepare-enrichment after candidates are available."
         )
-    findings = validate_findings(findings_data, candidate_tickers)
+    findings = validate_findings(findings_data, candidate_tickers, candidate_keys)
     enriched = copy.deepcopy(quantitative_data)
     for stock in enriched["Stocks"]:
-        finding = findings[stock["Ticker"]]
+        finding = findings[stock.get("Candidate_ID") or stock["Ticker"]]
         checks = {
             field: finding[field]
             for field in (*FINDING_BOOLEAN_FIELDS, *FINDING_EVIDENCE_FIELDS)
