@@ -5,7 +5,7 @@
 - Framework: pytest 9.1.1, declared as the `dev` extra in [`../../pyproject.toml`](../../pyproject.toml).
 - Test root: `tests/`.
 - pytest settings: `testpaths = ["tests"]`, `pythonpath = ["src"]`, strict markers, and project-local temporary base directory.
-- Baseline collection: 156 tests.
+- Baseline collection: 177 tests.
 - Tests do not require live market data, Wikipedia, Yahoo Finance, an AI provider, or network access.
 
 ## Commands
@@ -34,6 +34,7 @@
 | `test_pdf_reporting.py` | PDF command, deterministic filename, `%PDF-` signature, missing/malformed input. |
 | `test_quantitative_cli.py` | Quantitative options, schema metadata, provider failures, universe limit, invalid config. |
 | `test_quantitative_transform.py` | Numeric/ratio normalization, CAGR, positional quarterly acceleration, S/N evidence, ownership context, ranking, candidate selection, partial-fetch cooldown recovery. |
+| `test_verified_research.py` | Parser safety, artifact-order occurrence discovery, duplicate/share-class identity, optional matching positive `Candidate_ID`, analysis-date cutoff, primary evidence metadata, conservative negatives, enrichment/final/PDF integration, failure codes, and atomic output. |
 | `test_scoring.py` | Enriched validation, legacy aliases, verified-over-pending precedence, criterion order, S conjunction, M mapping, grades. |
 | `test_skill_document.py` | Skill front matter, command alignment, no OpenClaw dependency, safety and response contracts. |
 | `test_workflow_run.py` | Full pipeline, findings gate, zero-candidate guard, explicit fallback, total and findings failures. |
@@ -41,7 +42,7 @@
 
 ## Requirement gate
 
-Every requirement RQ-001 through RQ-015 is mapped in [requirements traceability](requirements-traceability.md). RQ-009 explicitly requires the offline suite; T-017 and T-018 require the full-suite gate before completion.
+Every requirement RQ-001 through RQ-016 is mapped in [requirements traceability](requirements-traceability.md). RQ-009 explicitly requires the offline suite; T-017 and T-018 require the full-suite gate before completion, and RQ-016/T-022 through T-024 cover Verified Research Mode.
 
 ## Full verification
 
@@ -55,6 +56,8 @@ python -m canslim_analysis status --json --output-dir <empty-directory>
 ```
 
 The delivery revision recorded all four checks as passing. The 2026-09-26 delivery additionally exercised a full 503-ticker Yahoo Finance quantitative run after the 156-test offline suite passed.
+
+The 2026-10-03 verified-research remediation recorded 177 tests passing with `.venv\Scripts\python.exe -m pytest -q`. Its documented evidence cutoff is the 2026-09-26 analysis date.
 
 ## Known limits
 

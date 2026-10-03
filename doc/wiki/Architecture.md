@@ -16,6 +16,7 @@ The package separates orchestration, external access, transformation, scoring, v
 | Market data | `src/canslim_analysis/pipeline/market_data.py` | Universe and Yahoo providers |
 | Quantitative | `src/canslim_analysis/pipeline/quantitative.py` | Screening and orchestration |
 | Enrichment | `src/canslim_analysis/pipeline/enrichment.py` | Templates, findings, merge |
+| Verified research | `src/canslim_analysis/pipeline/research.py` | Explicit evidence validation, occurrence discovery, conservative findings |
 | Scoring | `src/canslim_analysis/pipeline/scoring.py` | Dataset checks and seven criteria |
 | Final report | `src/canslim_analysis/pipeline/reporting.py` | Ranking and final JSON |
 | PDF | `src/canslim_analysis/reporting/pdf.py` | Final-report rendering |
@@ -27,6 +28,7 @@ The package separates orchestration, external access, transformation, scoring, v
 ```text
 Universe + market history + stock rows
   -> quantitative schema 2.1
+  -> (+ explicit evidence artifact) verified-research findings
   -> enrichment template
   -> verified findings merge
   -> final scored report

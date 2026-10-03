@@ -31,7 +31,11 @@ Use `source .venv/bin/activate` on macOS or Linux.
    python -m canslim_analysis prepare-enrichment
    ```
 
-4. Research candidates and fill findings without changing the schema.
+4. Research candidates, then either fill the worksheet without changing its schema or convert an auditable evidence pack:
+
+   ```text
+   python -m canslim_analysis verified-research --input <intermediate.json> --evidence <evidence.json> --output <verified_findings.json>
+   ```
 5. Merge findings:
 
    ```text
@@ -61,6 +65,8 @@ python -m canslim_analysis run --findings <findings.json>
 | Artifact | Path |
 |---|---|
 | Quantitative output | `out/intermediate_canslim.json` |
+| Verified evidence | Explicit operator-selected path |
+| Verified findings | Explicit operator-selected path |
 | Template | `out/enrichment_template.json` |
 | Enriched output | `out/enriched_canslim.json` |
 | Final JSON | `out/final_canslim_report.json` |

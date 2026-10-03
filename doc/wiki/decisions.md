@@ -68,3 +68,14 @@ These decisions are reconciled from [`../spec/design.md`](../spec/design.md), ta
 - **Rationale:** The delivered parser and orchestration no longer use them directly.
 - **Consequence:** `pandas` remains available transitively through `yfinance`; no lockfile pins transitive versions.
 - **Evidence:** `pyproject.toml`, `artifact-inventory.md`.
+
+## D-009 Keep verified research deterministic and fail-closed
+
+**Decision:** Convert only an explicit, complete evidence artifact; preserve occurrence order and `Candidate_ID`; allow optional occurrence identity on legacy positive records but validate any included ID as non-empty and matching; apply only the analysis-date cutoff; keep nonqualifying evidence false; and prohibit unverified fallback on the command.
+
+- **Status:** Implemented.
+- **Context:** Quantitative candidates can contain separate share classes and duplicate tickers, while older ticker-unique artifacts must remain usable.
+- **Alternatives documented:** Manual findings editing, provider-side identity resolution, and a fixed backward lookback.
+- **Rationale:** Artifact-driven discovery, auditable citations, exact occurrence identity, and conservative classification prevent stale-count merges, collapsed occurrences, and unsupported true flags.
+- **Consequence:** A malformed evidence or identity mismatch exits non-zero without completed output. The primary-source preference is an operating rule; direct structural checks cover retrievability and known nonqualifying categories.
+- **Evidence:** `pipeline/research.py`, `tests/test_verified_research.py`, `doc/spec/design.md` §16.

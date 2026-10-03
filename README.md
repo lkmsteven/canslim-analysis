@@ -62,6 +62,18 @@ python -m canslim_analysis enrich --findings <findings.json>
 
 A true catalyst, float-tightness, or institutional-quality claim requires non-empty evidence in its matching details field. Missing evidence must remain `false`.
 
+### Verified research conversion
+
+To convert a separate auditable evidence file into findings, supply all research paths explicitly:
+
+```text
+python -m canslim_analysis verified-research --input <intermediate.json> --evidence <evidence.json> --output <verified_findings.json>
+```
+
+The command discovers passing candidates in `Stocks` artifact order and emits one findings entry per occurrence. `Candidate_ID` is optional on legacy ticker-unique rows; duplicate tickers and distinct share-class occurrences require unique non-empty IDs, which the findings preserve. Positive evidence may include an optional matching non-empty `Candidate_ID`.
+
+Evidence is approved only through `Metadata.Date_Run`—`2026-09-26` for the current execution run—without a backward age threshold. Later dates fail. Prefer primary issuer or regulatory sources; unsupported, ambiguous, contradictory, low-quality, tangential, offering, lockup, dilution, or unexecuted-buyback evidence remains conservatively `false`. A failed validation is actionable, non-zero, and writes no completed output. `--unverified-fallback` is prohibited on this command.
+
 ### Final report and PDF
 
 ```text
@@ -84,6 +96,8 @@ If the current quantitative run selects zero candidates, `run --findings` stops 
 | Artifact | Default path |
 |---|---|
 | Quantitative candidates | `out/intermediate_canslim.json` |
+| Verified research evidence input | Operator-selected explicit path |
+| Verified research findings output | Operator-selected explicit path |
 | Enrichment worksheet | `out/enrichment_template.json` |
 | Enriched candidates | `out/enriched_canslim.json` |
 | Final JSON report | `out/final_canslim_report.json` |

@@ -39,7 +39,11 @@ This workflow is agent-neutral. Never edit generated JSON only to make a stage p
    python -m canslim_analysis prepare-enrichment
    ```
 
-4. Research candidates for fresh catalysts, float tightness, and institutional quality. Use reliable, current evidence. Do not present general market commentary as ticker-specific confirmation.
+4. Research candidates for fresh catalysts, float tightness, and institutional quality. Use reliable, current primary-source evidence. Do not present general market commentary as ticker-specific confirmation. To convert an auditable evidence artifact, run:
+
+   ```text
+   python -m canslim_analysis verified-research --input <intermediate.json> --evidence <evidence.json> --output <verified_findings.json>
+   ```
 
 5. Fill `out/enrichment_template.json` without changing its shape. Every true claim requires non-empty evidence or rationale in the matching details field. Save completed findings outside generated state if the user should retain them, or to a path supplied by the user.
 
@@ -70,6 +74,18 @@ python -m canslim_analysis run --findings <findings.json>
 ```
 
 Never use `--unverified-fallback` unless the user explicitly accepts unverified qualitative conclusions. It conservatively sets `N_New_Catalyst`, `S_Float_Tightness`, and `I_Institutional_Quality` to false and must be disclosed as unverified.
+
+## Verified Research Mode
+
+`verified-research` is the deterministic conversion path for a separately authored evidence file. Supply explicit `--input`, `--evidence`, and `--output` paths; do not substitute an older generated findings file. Candidate discovery comes only from `Stocks` in intermediate-artifact order, after `Metadata.Stocks_Passed_To_AI` and date validation. Every candidate occurrence receives exactly one findings entry in that order; non-passing rows are absent.
+
+Occurrence identity uses `Candidate_ID` when the intermediate row has one, otherwise `Ticker`. The matching identity is mirrored into the finding. Separate ticker/share-class rows must have unique non-empty `Candidate_ID` values, and duplicate tickers require them. Legacy ticker-unique candidates and findings without `Candidate_ID` remain valid. Evidence records may also carry optional additive `Candidate_ID`; a positive record that includes it must be non-empty text and match that occurrence.
+
+`Metadata.Date_Run` is the approved evidence cutoff. For the 2026-09-26 execution run, evidence dated `2026-09-26` is current and evidence dated after it fails; there is no backward age threshold. Prefer primary issuer or regulatory sources. A positive flag requires issuer/share-class attribution, a source, an `Evidence_Date`, a retrievable citation, a direct summary, and criterion context. Unsupported, ambiguous, contradictory, low-quality, tangential, offering, lockup, dilution, or unexecuted-buyback evidence remains conservatively `false` with the reason in its details field.
+
+A validation or missing-input failure exits non-zero and names the actionable correction. It writes no completed output. `--unverified-fallback` is prohibited on `verified-research`; it is not a supported option and must not be bypassed. Downstream use `enrich --findings <verified_findings.json>`, then `finalize`, `validate --stage final`, and `report` as appropriate.
+
+This workflow is educational research, not personalized investment advice.
 
 ## Qualitative Safety Rules
 

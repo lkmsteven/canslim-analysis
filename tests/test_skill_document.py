@@ -17,6 +17,7 @@ EXPECTED_COMMANDS = (
     "run",
     "status",
     "validate",
+    "verified-research",
 )
 
 
